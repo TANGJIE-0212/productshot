@@ -20,7 +20,7 @@
     return index <= 0 || (!!project.documents.discovery && keys.slice(1, index).every(approved));
   }
   function prepare() {
-    draft = structuredClone(project.documents[tab] || (tab === "selection" && project.documents.discovery ? { capabilityIds: [], additional: "", scope: "related", audience: "" } : null));
+    draft = structuredClone(project.documents[tab] || null);
     dirty = false; remoteChanged = false;
   }
   async function api(route, data) {
@@ -43,10 +43,11 @@
       if (!draft) return waiting("等待产品理解", "在 Codex 对话中提供产品链接或 Repo。读取授权的代码或网页后，有依据的功能清单会出现在这里。");
       return `<h2>我理解到的产品能力</h2><p class="lead">${esc(draft.summary)}</p><p class="source">依据版本：${esc(draft.sourceRevision)}</p><div class="capabilities">${draft.capabilities.map((c) => `<article><span class="badge">${esc(({ "source-verified": "源码有依据 · 未实测", "runtime-verified": "有运行验证", documented: "文档说明", "needs-confirmation": "待核验" })[c.confidence])}</span><h3>${esc(c.title)}</h3><p>${esc(c.proof)}</p><details><summary>依据与边界</summary><ul>${c.evidence.map((e) => `<li>${esc(e)}</li>`).join("")}</ul><p>${esc(c.limitations)}</p></details></article>`).join("")}</div>`;
     }
-    if (tab === "selection") return `<h2>这次想展示什么？</h2><p class="lead">介绍整个产品，或者勾选一个、多个具体功能。也可以直接写下新功能，不需要先确认产品理解。</p><div class="scope-options" role="group" aria-label="展示范围">${[["whole", "整个产品", "介绍产品整体价值与主要使用流程"], ["details", "具体功能", "勾选一个或多个，也可以自己补充"]].map(([id, label, help]) => `<label class="pick"><input type="radio" name="scope-mode" data-scope-mode="${id}" ${((draft.scope === "whole") === (id === "whole")) ? "checked" : ""}><span><b>${label}</b><small>${help}</small></span></label>`).join("")}</div>
-      ${draft.scope === "whole" ? '<p class="workspace-note">已选择整个产品。下面是已发现的能力，供你参考，不必逐项勾选。</p>' : `<p class="selection-count">已选 ${draft.capabilityIds.length} 项 · 选一项就是单功能，选多项就是多功能</p>`}<div class="picks">${project.documents.discovery.capabilities.map((c) => `<label class="pick"><input type="checkbox" data-capability="${esc(c.id)}" ${draft.capabilityIds.includes(c.id) ? "checked" : ""} ${draft.scope === "whole" ? "disabled" : ""}><span><b>${esc(c.title)}</b><small>${esc(c.proof)}</small></span></label>`).join("")}</div>
+    if (tab === "selection" && !draft) return waiting("先在左边选择展示范围", "Agent 会先问：整个产品，还是特定功能？选择特定功能后，这里展开多选表单；选择整个产品则跳过功能选择。");
+    if (tab === "selection") return `<h2>展示内容与目标受众</h2><p class="lead">右边选择、修改并提交，随后在左边告诉 Agent「已提交」。Agent 会读取这份表单继续，不会因提交而自动唤醒。</p><div class="scope-options" role="group" aria-label="展示范围">${[["whole", "整个产品", "跳过逐项功能选择"], ["details", "特定功能", "勾选一个或多个，也可以自己补充"]].map(([id, label, help]) => `<label class="pick"><input type="radio" name="scope-mode" data-scope-mode="${id}" ${((draft.scope === "whole") === (id === "whole")) ? "checked" : ""}><span><b>${label}</b><small>${help}</small></span></label>`).join("")}</div>
+      ${draft.scope === "whole" ? '<p class="workspace-note">介绍整个产品，无需逐项选功能。接下来确定目标受众。</p>' : `<p class="selection-count">已选 ${draft.capabilityIds.length} 项 · 可多选</p><div class="picks">${project.documents.discovery.capabilities.map((c) => `<label class="pick"><input type="checkbox" data-capability="${esc(c.id)}" ${draft.capabilityIds.includes(c.id) ? "checked" : ""}><span><b>${esc(c.title)}</b><small>${esc(c.proof)}</small></span></label>`).join("")}</div>`}
       ${textField(draft.scope === "whole" ? "希望特别介绍的内容（可选）" : "补充新功能（也可以只填这里）", draft.additional, "additional", true)}
-      ${draft.audience ? textField("观众与背景", draft.audience, "audience", true) : '<p class="workspace-note">先保存展示内容。接下来 Agent 会根据你的选择给出受众建议，不用现在填。</p>'}
+      ${draft.audienceOptions !== undefined || draft.audience ? `<section class="audience-form"><h3>这支视频给谁看？</h3><p class="workspace-note">这些选项由 Agent 根据产品与展示内容推荐。点击可填入答案，也可以直接填写或修改下面的描述。</p><div class="picks">${(draft.audienceOptions || []).map((option) => `<button type="button" class="audience-option" data-action="audience-pick" data-audience="${esc(option.id)}" aria-pressed="${draft.audience === option.label}"><b>${esc(option.label)}</b><small>${esc(option.reason)}</small></button>`).join("")}</div>${textField("目标受众（可自由填写、补充或修改）", draft.audience, "audience", true)}</section>` : '<p class="workspace-note">先提交展示内容，并在左边说「已提交」。Agent 读取后会在这里提供受众建议。</p>'}
       <details class="product-evidence"><summary>查看产品理解与证据（无需单独确认）</summary><p>${esc(project.documents.discovery.summary)}</p><p class="source">${esc(project.source)}</p>${button("discovery", "查看完整能力依据")}</details>`;
     if (tab === "outline") {
       if (!draft) return waiting("还没有大纲", "功能与观众确认后，Agent 会提出合适的场景。选定的方案在这里变成简单列表，不需要截图或时长。");
@@ -68,7 +69,7 @@
     document.getElementById("app").innerHTML = `<header class="top"><button data-action="home" class="brand" aria-label="ProductShot 首页"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M11 5H5v6m16-6h6v6M5 21v6h6m16-6v6h-6" fill="none" stroke="currentColor" stroke-width="2.6"/><path d="m13 10 10 6-10 6z" fill="currentColor"/></svg>ProductShot</button><div class="project-name">${esc(project.name)}<small>本地项目 · revision ${project.revision}</small></div><span class="private"><i></i> 与 Agent 共享同一份成果</span></header>
       <main><nav aria-label="项目阶段"><button data-action="home" class="home-tab ${tab === "home" ? "active" : ""}" aria-label="Skill 首页">概览</button>${Object.entries(pages).map(([key, labels], i) => `<button data-action="tab" data-tab="${key}" class="${activePage() === key ? "active" : ""}" aria-current="${activePage() === key ? "step" : "false"}"><em>0${i + 1}</em><span>${labels[0]}<small>${labels[1]} · ${status(effectiveTab(key))}</small></span></button>`).join("")}</nav><div class="document-body"><div id="notice" role="status" class="notice ${notice || remoteChanged ? "" : "hidden"}">${esc(remoteChanged ? "Agent 已发布新版本；你的未保存编辑仍在。请先下载草稿，再重新加载合并，不能覆盖新版本。" : notice)}</div>
       <div class="document-heading"><span>${tab === "home" ? "从想法，到可拍摄的故事" : `${names[tab]} / ${status(tab)}`}</span><div>${button("refresh", "读取最新版本", busy)}${button("download", dirty ? "下载未保存草稿" : "下载项目", busy)}</div></div>${documentContent()}
-      <footer><span id="save-state">${tab === "home" ? "在当前 Agent 对话中运行 Skill" : dirty ? "有未保存编辑" : approved(tab) ? "此版本已确认" : tab === "selection" && !draft?.audience ? "保存功能后，下一步选择受众" : tab === "discovery" ? "产品理解仅供参考，不需要单独确认" : "当前为草稿，确认后推进下一阶段"}</span><div>${tab === "discovery" && draft ? '<button data-action="tab" data-tab="selection" class="primary">直接选择展示内容</button>' : ""}${editable ? button("save", tab === "selection" && !draft.audience ? "保存展示内容" : "保存修改", busy, "secondary") : ""}${canApprove ? button("approve", approved(tab) ? "再次确认此版本" : "确认此阶段", busy, "primary") : ""}</div></footer><details class="project-source"><summary>产品来源</summary><p>${esc(project.source)}</p></details></div></main><div class="shell-footer"><span>ProductShot / A story worth showing.</span><span>对话在 Agent，成果在浏览器。</span></div>`;
+      <footer><span id="save-state">${tab === "home" ? "在当前 Agent 对话中运行 Skill" : dirty ? "有未保存编辑" : approved(tab) ? "此版本已确认" : tab === "selection" ? "提交后，在左边告诉 Agent「已提交」再继续" : tab === "discovery" ? "产品理解仅供参考，不需要单独确认" : "当前为草稿，确认后推进下一阶段"}</span><div>${tab === "discovery" && draft ? '<button data-action="tab" data-tab="selection" class="primary">直接选择展示内容</button>' : ""}${editable ? button("save", tab === "selection" ? "提交表单" : "保存修改", busy, "secondary") : ""}${canApprove ? button("approve", approved(tab) ? "再次确认此版本" : "确认此阶段", busy, "primary") : ""}</div></footer><details class="project-source"><summary>产品来源</summary><p>${esc(project.source)}</p></details></div></main><div class="shell-footer"><span>ProductShot / A story worth showing.</span><span>对话在 Agent，成果在浏览器。</span></div>`;
   }
   function changed() { dirty = true; editVersion++; const state = document.getElementById("save-state"); if (state) state.textContent = "有未保存编辑，尚未修改已确认版本"; }
   function readInputs() {
@@ -79,10 +80,14 @@
       target[parts.at(-1)] = el.value;
     });
     if (tab === "selection" && draft) {
-      draft.capabilityIds = [...document.querySelectorAll("[data-capability]:checked")].map((el) => el.dataset.capability);
+      if (draft.scope !== "whole") draft.capabilityIds = [...document.querySelectorAll("[data-capability]:checked")].map((el) => el.dataset.capability);
       if (draft.scope !== "whole") draft.scope = draft.capabilityIds.length === 1 && !draft.additional.trim() ? "single" : "related";
       const count = document.querySelector(".selection-count");
       if (count) count.textContent = `已选 ${draft.capabilityIds.length} 项 · 选一项就是单功能，选多项就是多功能`;
+      document.querySelectorAll("[data-audience]").forEach((el) => {
+        const option = draft.audienceOptions?.find((item) => item.id === el.dataset.audience);
+        el.setAttribute("aria-pressed", String(draft.audience === option?.label));
+      });
     }
   }
   async function action(data) {
@@ -95,7 +100,7 @@
         if (data.action === "approve" && tab !== "review") tab = keys[keys.indexOf(tab) + 1];
         prepare();
       }
-      notice = dirty ? "提交时的内容已保存；你随后输入的修改仍在草稿中，请再次保存。" : tab === "selection" && !draft?.audience ? "展示内容已保存到项目。在当前对话里继续，Agent 会读取选择并给出受众建议。" : "已保存到项目，Agent 与网页读取的是同一份数据。";
+      notice = dirty ? "提交时的内容已保存；你随后输入的修改仍在草稿中，请再次保存。" : tab === "selection" ? `${draft?.audience ? "表单已保存到项目" : "展示内容已保存到项目"}。请在左边说「已提交」，Agent 会读取最新答案继续；未自动唤醒。` : "已保存到项目，Agent 与网页读取的是同一份数据。";
     } catch (error) { notice = error.message; }
     finally { busy = false; render(); }
   }
@@ -150,6 +155,10 @@
         const payload = dirty ? { format: "productshot-stage-draft", stage: tab, basedOnRevision: project.revision, data: draft } : project;
         const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }));
         const link = document.createElement("a"); link.href = url; link.download = dirty ? `${tab}-draft.json` : "director-project.json"; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } else if (a === "audience-pick") {
+        readInputs();
+        draft.audience = draft.audienceOptions.find((option) => option.id === el.dataset.audience).label;
+        changed(); render();
       } else if (a === "save") {
         readInputs(); await action({ action: "publish", stage: tab, data: draft });
       } else if (a === "approve") {

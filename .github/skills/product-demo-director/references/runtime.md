@@ -59,15 +59,18 @@ the Agent. Do not reload the page to force synchronization.
 1. Introduce the Skill in chat; obtain only a missing URL/repo.
 2. Initialize or resume the same private project; open its viewer.
 3. Inspect real product evidence and publish discovery.
-4. Immediately show whole-product selection, feature checkboxes and custom
-   input in the browser. Do not add a discovery approval question. Native
-   answers are also accepted. Save feature selection with `audience: ""` first,
-   then suggest audiences based on the saved features.
-5. Confirm the published document in native chat (or read its browser approval).
+4. Ask "whole product or specific features?" as a native single-choice question.
+   Publish the scope. Whole product skips feature selection; specific features
+   expands browser checkboxes and custom input. Have the user submit and tell
+   you in native chat. Read the saved answer before continuing.
+5. Publish product-informed `audienceOptions` in the same selection document.
+   The browser offers those options and editable free text. Have the user
+   submit and tell you again, then read the latest document.
+6. Confirm the published document in native chat (or read its browser approval).
    Record explicit native approval with `approve`.
-6. Propose several scenarios and ordered outlines in chat. Publish the chosen
+7. Propose several scenarios and ordered outlines in chat. Publish the chosen
    outline; discuss and approve it before drafting detailed shots.
-7. Repeat the same publish/discuss/edit/approve loop for storyboard and review.
+8. Repeat the same publish/discuss/edit/approve loop for storyboard and review.
 
 Before **every native response**, read the current project. Saved browser edits
 are already the current document: do not ask the user to resend them or post
@@ -162,6 +165,31 @@ depends on answering the later audience question. Approving `selection`
 requires a nonempty audience; outline publication still requires selection
 approval. Discovery changes invalidate later approvals, but discovery itself
 has no user approval gate.
+
+An initial specific-feature draft may have empty `capabilityIds`, `additional`
+and `audience` to open the form. Approval requires at least one chosen/custom
+feature unless scope is `whole`, plus a nonempty audience.
+
+When ready to ask about audience, publish optional `audienceOptions` alongside
+the existing selection fields. Omit it during initial feature selection. An
+empty array intentionally opens free-text-only audience entry:
+
+```json
+"audienceOptions": [
+  {
+    "id": "builders",
+    "label": "Business application builders",
+    "reason": "They need to see how the selected building workflow works."
+  }
+]
+```
+
+This is a field fragment, not a standalone stage document. Up to eight options
+are supported; IDs must be unique. Labels and reasons come from Agent analysis,
+not fixed UI presets. Clicking an option fills the `audience` text field;
+users can freely replace or supplement it. Submission persists the entire
+selection revision without approving it. The user returns to native chat to
+continue; no host wake-up callback is installed.
 
 ### 3. `outline`
 

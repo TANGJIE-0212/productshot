@@ -28,8 +28,8 @@ not the target product repository.
    Inspect the same browser page to verify the published result is visible.
 4. Read the project again before each write. User edits and feedback may have
    changed its revision. Never overwrite a stale revision.
-5. Discovery is research, not a user approval checkpoint. Immediately show
-   selectable capabilities after publishing it. Confirm the combined
+5. Discovery is research, not a user approval checkpoint. Ask the scope
+   single-choice question in native chat, then show the appropriate form. Confirm the combined
    capabilities/audience, outline and storyboard at their respective stages.
 6. On each native user turn, run `read` before answering or editing. Browser
    changes may have invalidated approvals; use the newest document, not a stale
@@ -52,15 +52,30 @@ The browser has a Skill overview and four result tabs: **Features & Audience**, 
 Outline**, **Story & Shots**, **Preview & Review**. Discovery remains a separate
 evidence section inside the first tab, not an approval gate.
 
-After understanding the product, open the first result tab with whole-product
-selection, capability checkboxes (one or many), and a custom-feature field.
-Do not ask "is my understanding correct?" before these choices. The native
-question tool may not support multi-select: use the actual webpage checkboxes,
-not a long single-select menu or instructions to type numeric combinations.
-Accept native chat answers too and persist them into the same selection draft.
-An empty audience is allowed while selecting features; do not invent one or
-block saving features. After the user saves, read their choices and suggest
-target audiences. Accept free text. An option answer is not stage
+Use this exact intake sequence, reusing answers already supplied:
+
+1. In native chat ask one single-choice question: **whole product or specific
+   features?** Do not ask the user to approve your product understanding.
+2. Whole product: publish `scope: "whole"` and skip feature selection entirely.
+   Proceed to audience. This skips the feature question, not the rest of the film.
+3. Specific features: publish a selection draft (`scope: "related"` with empty
+   IDs is allowed initially). The browser expands real capability checkboxes
+   and a custom-feature field. Do not emulate multi-select with a long native
+   single-select menu or numeric-combination instructions.
+4. Ask the user to submit the right-side form and say "submitted" in native
+   chat. Stop and wait; do not claim submission automatically wakes the Agent.
+5. Read the saved selection. Generate 2–4 audience recommendations with reasons
+   based on the product and chosen scope/features, and publish them as
+   `selection.audienceOptions`. Preserve the user's feature choices and any
+   existing audience. Open the right-side audience form, which offers these
+   suggestions plus editable free text. Ask the user to submit and tell you.
+6. On their next native message, read again and continue from the latest form.
+   If scope/features changed, reconsider audience suggestions rather than
+   blindly reusing old recommendations. Right-side fields remain editable.
+
+Accept direct native answers as well. Never re-ask a decision already given.
+An empty audience is allowed in a draft; do not invent one or block saving
+features. An option answer or form submission alone is not stage
 approval: publish the combined selection and ask for confirmation separately.
 Offer 2–3 scenario alternatives in native chat, each with a different ordered
 outline, and accept custom input. Publish only the chosen draft outline.

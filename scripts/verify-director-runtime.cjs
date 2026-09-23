@@ -28,6 +28,8 @@ function approve(stage) { return run("approve", { revision: read().revision, sta
     publish("discovery", discovery);
     const selection = { capabilityIds: ["form"], additional: "", scope: "single", audience: "Test audience" };
     const input = path.join(tmp, "selection.json"); fs.writeFileSync(input, JSON.stringify(selection));
+    publish("selection", { capabilityIds: [], additional: "", scope: "related", audience: "" });
+    run("approve", { revision: read().revision, stage: "selection", note: "Cannot approve empty features" }, 1);
     publish("selection", { ...selection, audience: "" });
     assert.equal(read().approvals.discovery, undefined);
     run("approve", { revision: read().revision, stage: "selection", note: "Cannot approve before audience" }, 1);
@@ -187,6 +189,7 @@ function approve(stage) { return run("approve", { revision: read().revision, sta
     await page.waitForSelector('[data-scope-mode="whole"]');
     assert.equal(await page.$('[data-action="approve"]'), null);
     await page.click('[data-scope-mode="whole"]');
+    assert.equal(await page.$("[data-capability]"), null);
     await page.click('[data-action="save"]');
     await page.waitForFunction(() => document.getElementById("notice").textContent.includes("展示内容已保存"));
     assert.equal(read().documents.selection.scope, "whole");
@@ -199,15 +202,59 @@ function approve(stage) { return run("approve", { revision: read().revision, sta
     assert.deepEqual(read().documents.selection.capabilityIds, []);
     assert.equal(read().documents.selection.additional, "My own new feature");
     assert.equal(read().approvals.discovery, undefined);
+    const audienceOptions = [
+      { id: "builders", label: "Business builders", reason: "They create workflows with the selected features." },
+      { id: "reviewers", label: "Product reviewers", reason: "They evaluate how the features fit together." }
+    ];
+    publish("selection", { ...read().documents.selection, audienceOptions });
+    await page.waitForSelector('[data-audience="builders"]');
+    await page.click('[data-audience="builders"]');
+    assert.equal(await page.$eval('[data-path="audience"]', (el) => el.value), "Business builders");
+    await page.$eval('[data-path="audience"]', (el) => {
+      el.value = "Business builders who are new to the product";
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await page.click('[data-action="save"]');
+    await page.waitForFunction(() => document.getElementById("notice").textContent.includes("表单已保存"));
+    assert.equal(read().documents.selection.audience, "Business builders who are new to the product");
+    assert.deepEqual(read().documents.selection.audienceOptions, audienceOptions);
+    assert.equal(read().approvals.selection, undefined);
+    await page.reload({ waitUntil: "networkidle0" });
+    await page.click('[data-tab="selection"]');
+    assert.equal(await page.$eval('[data-path="audience"]', (el) => el.value), "Business builders who are new to the product");
+    for (const width of [768, 390, 320]) {
+      await page.setViewport({ width, height: 900 });
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true, `audience overflow ${width}`);
+    }
+    const malformed = path.join(tmp, "bad-audience.json");
+    fs.writeFileSync(malformed, JSON.stringify({ ...read().documents.selection, audienceOptions: [audienceOptions[0], audienceOptions[0]] }));
+    run("publish", { revision: read().revision, stage: "selection", input: malformed }, 1);
+    publish("selection", { ...read().documents.selection, audienceOptions: [], audience: "" });
+    await page.waitForFunction(() => document.querySelector('[data-path="audience"]').value === "");
+    assert.equal(await page.$("[data-audience]"), null);
+    await page.type('[data-path="audience"]', "My own audience");
+    await page.click('[data-action="save"]');
+    await page.waitForFunction(() => document.getElementById("notice").textContent.includes("表单已保存"));
+    assert.equal(read().documents.selection.audience, "My own audience");
+    publish("selection", { ...read().documents.selection, scope: "whole", audienceOptions });
+    await page.waitForSelector('[data-audience="reviewers"]');
+    assert.equal(await page.$("[data-capability]"), null);
+    await page.click('[data-audience="reviewers"]');
+    await page.click('[data-action="save"]');
+    await page.waitForFunction(() => document.getElementById("notice").textContent.includes("表单已保存"));
+    assert.equal(read().documents.selection.scope, "whole");
+    assert.equal(read().documents.selection.audience, "Product reviewers");
     await page.reload({ waitUntil: "networkidle0" });
     await page.click('[data-tab="selection"]');
     assert.equal(await page.$eval('[data-path="additional"]', (el) => el.value), "My own new feature");
     publish("discovery", { ...discovery, capabilities: [...discovery.capabilities, { ...discovery.capabilities[0], id: "dashboard", title: "Dashboard" }] });
+    await page.waitForFunction((revision) => document.querySelector(".project-name").textContent.includes(`revision ${revision}`), {}, read().revision);
+    await page.click('[data-scope-mode="details"]');
     await page.waitForSelector('[data-capability="dashboard"]');
     await page.click('[data-capability="form"]');
     await page.click('[data-capability="dashboard"]');
     await page.click('[data-action="save"]');
-    await page.waitForFunction(() => document.getElementById("notice").textContent.includes("展示内容已保存"));
+    await page.waitForFunction(() => document.getElementById("notice").textContent.includes("表单已保存"));
     assert.deepEqual(read().documents.selection.capabilityIds, ["form", "dashboard"]);
     assert.equal(read().documents.selection.scope, "related");
     assert.equal(read().documents.selection.additional, "My own new feature");

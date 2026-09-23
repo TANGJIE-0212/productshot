@@ -14,7 +14,13 @@ The thin Codex entry point must not duplicate the workflow.
 
 The browser overview introduces the Skill. Four result tabs show features and
 audience, scenario and outline, story and shots, and preview/review. Discussion
-and intelligent choices happen in native chat. Browser edits and Agent writes
+starts in native chat with a single-choice "whole product / specific features".
+Whole product skips feature selection. Specific features opens browser
+checkboxes plus custom input. The Agent next supplies product-informed audience
+options and free text in that same browser. Users may edit any displayed field,
+submit, and say "submitted" in native chat; the Agent then reads and continues.
+Do not promise automatic wake-up, add a discovery approval question, or replace
+browser multiselect with a long native single-choice list. Browser edits and Agent writes
 use the same revision-checked private project. Do not invent evidence or treat
 storyboard approval as permission to record, spend money or publish.
 

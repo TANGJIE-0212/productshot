@@ -28,11 +28,19 @@ the same versioned project, with explicit approvals, stale-write rejection and r
 Changing an approved document invalidates affected approvals without deleting
 downstream drafts.
 
-After product inspection, choose the whole product or check one/many features
-directly in the browser; a free-text field accepts undiscovered features too.
-There is no separate "confirm product understanding" gate. Save features first,
-then discuss audience suggestions with the Agent. The combined features and
-audience must be confirmed before generating an outline.
+After product inspection:
+
+1. The Agent asks **whole product / specific features** in native chat.
+2. Whole product skips feature selection. Specific features opens browser
+   checkboxes and a custom-feature field.
+3. Submit the form and tell the Agent "submitted" in native chat.
+4. The Agent reads the answer and generates relevant audience suggestions with
+   reasons. Choose one or write/edit your own audience in the browser.
+5. Submit and tell the Agent again; it reads the latest form and continues.
+
+All displayed fields remain editable. Submission saves a revision but does not
+automatically wake the Agent or approve a stage. There is no separate discovery
+approval question. Confirm features and audience before generating an outline.
 
 ### What is not connected yet
 
@@ -89,6 +97,27 @@ See [runtime commands and JSON shapes](.github/skills/product-demo-director/refe
 for publishing documents, reading browser edits and recording approvals.
 See [shell/content boundaries](.github/skills/product-demo-director/references/shell-and-content.md)
 for the visual design rules. Original shell illustrations are not video assets.
+
+## Continue on another computer
+
+```powershell
+git clone https://github.com/TANGJIE-0212/productshot.git
+Set-Location productshot
+```
+
+Open this folder in your Agent and invoke `product-demo-director`. Node.js 20+
+is sufficient for the Skill runner; `npm ci` is only needed for the earlier
+prototype or Puppeteer regression tests. The repository's `AGENTS.md` and Skill
+contain the agreed interaction sequence, so a new session need not reconstruct
+it from old chat.
+
+Private project state and conversation data are **not** in this public repo.
+To resume the exact same project, transfer its `.director-projects/<name>/`
+folder privately, including `project.json` and `history/`, then give the new
+Agent that local folder. Start a new `serve` process and use its newly printed
+URL, not the old computer's access token. Tell the Agent if the product repo or
+artifact paths changed; old evidence is not automatically reverified. Without
+the private folder, provide a product URL/repo to start a new project.
 
 ## Earlier video prototype
 
