@@ -6,6 +6,13 @@ The Agent runs the Skill using its existing tools. A bundled Node CLI manages
 files and a private, loopback-only browser view. There is no second model,
 automatic chat responder, hosted backend, Puppeteer dependency, or fake output.
 
+The host's native conversation is the **only chat UI**. Open the local viewer in
+the host's in-app browser; the webpage contains only the Skill overview and
+editable results. The project does not embed Codex or replace its interface.
+For Codex, the repository includes a discoverable entry at
+`.agents/skills/product-demo-director/SKILL.md`; it loads the canonical workflow
+here rather than maintaining a second copy.
+
 The runner is portable with the whole skill folder:
 
 ```text
@@ -37,6 +44,35 @@ local URL with a random access token in the fragment; open that full URL. The
 browser keeps the token in session storage and removes it from the address bar.
 Do not upload this URL or put it in a public share page. Stop by terminating
 only that known process/session.
+
+Use the host browser tool to open the full URL, not a shell command launching
+an unrelated external browser. Reuse that page for the rest of the conversation.
+The empty project's homepage introduces the four steps. Optional `?stage=home`,
+`discovery`, `selection`, `outline`, `storyboard`, or `review` opens a specific
+view (put the query before the access fragment). Subsequent Agent publications
+or approvals focus the affected stage automatically, unless the user has
+unsaved browser edits. The browser never discards an unsaved draft to follow
+the Agent. Do not reload the page to force synchronization.
+
+### Native conversation loop
+
+1. Introduce the Skill in chat; obtain only a missing URL/repo.
+2. Initialize or resume the same private project; open its viewer.
+3. Inspect real product evidence and publish discovery.
+4. Use native questions for capabilities, scope and then audience. Accept
+   free-text additions. Publish selection once those answers are available.
+5. Confirm the published document in native chat (or read its browser approval).
+   Record explicit native approval with `approve`.
+6. Propose several scenarios and ordered outlines in chat. Publish the chosen
+   outline; discuss and approve it before drafting detailed shots.
+7. Repeat the same publish/discuss/edit/approve loop for storyboard and review.
+
+Before **every native response**, read the current project. Saved browser edits
+are already the current document: do not ask the user to resend them or post
+them to a second chat. After each write, inspect the result page with the host
+browser tool and continue in native chat. Browser polling is not a background
+model; a user who is only editing the webpage returns to native chat to continue
+the conversation. No additional model API integration is required.
 
 The server binds **127.0.0.1**, not all interfaces. Requests require the current
 session token and reject cross-origin and cross-site requests. This is a local
@@ -206,7 +242,12 @@ complete without separately producing and inspecting the artifact.
 
 ## Feedback loop
 
-### Persist the conversation
+### Legacy conversation records (compatibility only)
+
+Do not use this protocol for new Skill runs. Questions and answers belong in
+the host's native conversation, not in the webpage. These CLI commands remain
+available so old project records are readable; the current webpage does not
+display a chat, accept `answer`, or provide a feedback composer.
 
 Use `message --input <json>` with the current `--project` and `--revision`.
 Plain Agent messages use `kind: "message"` and `choices: []`. Questions use
@@ -228,7 +269,7 @@ These are schema examples, not mandatory audience suggestions. Propose relevant
 options from the actual product and conversation. Outline alternatives go in
 question choices with each alternative's ordered steps in `description`.
 
-The browser posts `answer`; the host Agent can use `answer --input <json>` too:
+Legacy clients can post `answer`; the CLI also accepts `answer --input <json>`:
 
 ```json
 {"questionId": "persisted-message-uuid", "choiceIds": ["builders"], "text": ""}
@@ -247,9 +288,9 @@ review edits cannot alter file paths, checksums or production validation.
 Changing review notes invalidates review approval and clears `release`, just as
 changing any upstream document does. Existing projects need no migration.
 
-Browser feedback is persisted with stage, originating revision, status and ID.
-It does **not** autonomously wake the Agent. User asks the current Agent to
-continue; then:
+Legacy feedback is persisted with stage, originating revision, status and ID.
+For new runs use the native conversation and direct document edits. If an old
+project has open requests, continue processing them:
 
 1. `read` the project and open requests.
 2. Interpret the request with current source evidence and prior constraints.

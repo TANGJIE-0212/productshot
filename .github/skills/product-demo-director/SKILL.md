@@ -17,27 +17,37 @@ Requires Node.js 20+; no dependency install, API key or extra model is needed.
 All commands below refer to `scripts/director.mjs` inside this skill directory,
 not the target product repository.
 
-1. Initialize a private project folder outside `public/`.
-2. Inspect the authorized product, then write and publish a `discovery` JSON.
-3. Start the local project viewer and verify its URL responds before sharing it.
+1. Introduce the four steps in the native Agent conversation. Ask only for a
+   missing product URL or repo; reuse an existing project's source and decisions.
+2. Initialize a private project folder outside `public/`. Start its viewer,
+   verify the local URL, and open it in the host's in-app browser using the
+   available browser tool. Keep the native conversation and this page side by
+   side. If the host has no browser tool, give the local URL and state that
+   limitation; do not pretend to have opened an in-app browser.
+3. Inspect the authorized product, then write and publish a `discovery` JSON.
+   Inspect the same browser page to verify the published result is visible.
 4. Read the project again before each write. User edits and feedback may have
    changed its revision. Never overwrite a stale revision.
 5. Confirm discovery, selected capabilities/audience, outline and storyboard as
    **separate** checkpoints. Publish a document before asking to approve it.
-6. When the user says they edited the UI, run `read`; process open requests and
-   the newest document. The web server does not automatically wake the Agent.
-7. Publish only the affected revision, then resolve the request with a precise
-   note. Never mark feedback done merely because it was received.
+6. On each native user turn, run `read` before answering or editing. Browser
+   changes may have invalidated approvals; use the newest document, not a stale
+   copy from chat. Never require the user to copy a JSON file between panes.
+7. Publish only the affected revision, verify it in the browser, and continue
+   asking the next focused question in the native conversation. Process legacy
+   open requests if present; resolve them only after the requested work is done.
 
 ### Conversation-led workspace
 
-The left pane persists real Agent messages and user answers. Use the `message`
-command in `runtime.md` to publish your introduction and one focused question
-at a time; options are based on product evidence, never fixed product presets.
-Read new answers with `read`, or record an answer from the host conversation
-with `answer`. The browser does not wake the host Agent automatically.
+**The left side is Codex's own conversation. The right side is Codex's in-app
+browser showing the project. They are not two panels inside our website.**
+Use the current host Agent and its native question/choice tools for all
+conversation. Do not build or open a second chatbot, feedback inbox, embedded
+Codex clone, model API service, or transcript mirror in the generated webpage.
+No additional model integration is needed: the host Agent is already executing
+this Skill. Do not use the legacy `message`/`answer` commands for this workflow.
 
-The right pane has four result tabs: **Features & Audience**, **Scenario &
+The browser has a Skill overview and four result tabs: **Features & Audience**, **Scenario &
 Outline**, **Story & Shots**, **Preview & Review**. Discovery remains a separate
 approval checkpoint inside the first tab, not an extra top-level page.
 
@@ -45,16 +55,17 @@ After understanding the product, offer one feature, several features, or the
 whole product, and accept custom features. Then suggest target audiences based
 on the chosen capabilities and accept free text. An option answer is not stage
 approval: publish the combined selection and ask for confirmation separately.
-Offer 2–3 scenario alternatives with a different ordered outline in each
-option's description, plus custom input. Publish only the chosen draft outline.
+Offer 2–3 scenario alternatives in native chat, each with a different ordered
+outline, and accept custom input. Publish only the chosen draft outline.
 Later story and review revisions can originate from either pane; read current
 documents before every edit. Browser review notes never mean the video changed.
 
 Do not install third-party illustration skills, switch to a mockup, generate
 placeholder product footage or call paid services as part of starting this skill.
 Do not publish future stages before the preceding decisions are approved.
-The project's five tabs are derived from persisted stage documents. Missing
-documents display waiting states, not invented examples.
+The four result tabs are derived from five persisted stage documents (discovery
+and selection share the first tab). Missing documents display waiting states,
+not invented examples or a blank intake form the user must fill.
 
 ### User-facing introduction
 

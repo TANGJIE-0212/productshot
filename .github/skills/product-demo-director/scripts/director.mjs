@@ -250,7 +250,7 @@ async function serve(dir, port) {
   server.requestTimeout = 15000;
   server.headersTimeout = 10000;
   await new Promise((resolve, reject) => { server.once("error", reject); server.listen(port, "127.0.0.1", resolve); });
-  console.log(JSON.stringify({ status: "listening", url: `${origin}/#${token}`, project: dir, note: "Local private project view. The current Agent must read requests; no autonomous chat model is running." }));
+  console.log(JSON.stringify({ status: "listening", url: `${origin}/#${token}`, project: dir, note: "Open this result viewer in the host Agent's in-app browser. Keep conversation in the native Agent; read the project before continuing." }));
 }
 
 const [command, ...args] = process.argv.slice(2);

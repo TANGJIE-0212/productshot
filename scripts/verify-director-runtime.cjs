@@ -77,22 +77,27 @@ function approve(stage) { return run("approve", { revision: read().revision, sta
     page.on("pageerror", (e) => errors.push(e.message));
     page.on("dialog", (d) => d.accept());
     await page.setViewport({ width: 1440, height: 960 });
-    await page.goto(start.url, { waitUntil: "networkidle0" });
+    url.searchParams.set("stage", "discovery");
+    await page.goto(url.href, { waitUntil: "networkidle0" });
     assert.match(await page.$eval("main", (e) => e.textContent), /Actual fixture document/);
     assert.equal(page.url().includes("#"), false);
+    assert.equal(await page.$("aside, #feedback, .conversation, [data-question]"), null);
+    await page.click('[data-action="home"]');
+    assert.match(await page.$eval("main", (e) => e.textContent), /在 Codex 原生对话中运行 Skill/);
+    assert.equal(await page.$$eval(".workflow button", (items) => items.length), 4);
     await page.click('[data-tab="outline"]');
     await page.$eval('[data-path="scenarios.0.steps.0.title"]', (el) => { el.value = "Browser changed"; el.dispatchEvent(new Event("input", { bubbles: true })); });
     await page.click('[data-action="save"]');
     await page.waitForFunction(() => document.getElementById("notice").textContent.includes("已保存到项目"));
     assert.equal(read().documents.outline.scenarios[0].steps[0].title, "Browser changed");
     assert.equal(read().approvals.storyboard, undefined);
-    await page.type("#feedback-text", "Please keep the empty initial state.");
-    await page.click("#feedback button");
-    await page.waitForFunction(() => document.querySelector(".requests").textContent.includes("Please keep"));
+    run("request", { revision: read().revision, stage: "outline", text: "Please keep the empty initial state." });
     assert.equal(read().requests.at(-1).status, "open");
     const requestId = read().requests.at(-1).id;
     run("resolve", { revision: read().revision, id: requestId, note: "Updated in isolated test" });
-    await page.waitForFunction(() => document.querySelector(".requests").textContent.includes("Updated in isolated test"), { timeout: 8000 });
+    assert.equal(read().requests.at(-1).resolution, "Updated in isolated test");
+    await page.click('[data-action="refresh"]');
+    await page.waitForFunction((revision) => document.querySelector(".project-name").textContent.includes(`revision ${revision}`), {}, read().revision);
     await page.$eval('[data-path="scenarios.0.steps.0.title"]', (el) => { el.value = "Unsaved draft"; el.dispatchEvent(new Event("input", { bubbles: true })); });
     const latestOutline = structuredClone(read().documents.outline); latestOutline.scenarios[0].steps[0].title = "Agent newer version";
     publish("outline", latestOutline);
@@ -106,52 +111,75 @@ function approve(stage) { return run("approve", { revision: read().revision, sta
     await page.waitForFunction(() => document.querySelector('[data-path="scenarios.0.steps.0.title"]').value === "Agent newer version");
     for (const width of [1440, 768, 390, 320]) {
       await page.setViewport({ width, height: 900 });
+      await page.click('[data-action="home"]');
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true, `home overflow ${width}`);
       for (const tab of ["selection", "outline", "storyboard", "review"]) {
         await page.click(`[data-tab="${tab}"]`);
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true, `overflow ${width}/${tab}`);
       }
     }
-      await page.setViewport({ width: 1440, height: 960 });
-      const messagePath = path.join(tmp, "message.json");
-      const sendQuestion = () => {
-        fs.writeFileSync(messagePath, JSON.stringify({ stage: "outline", kind: "single", text: "Choose a scenario", choices: [{ id: "a", label: "Collect orders", description: "Open form -> fill -> submit" }, { id: "b", label: "Collect feedback", description: "Open form -> write feedback -> verify" }] }));
-        return run("message", { revision: read().revision, input: messagePath });
-      };
-      sendQuestion();
-      await page.waitForSelector('.question:not(:disabled)');
-      await page.click('.question:not(:disabled) input[value="b"]');
-      await page.type('.question:not(:disabled) textarea', "Keep the empty start.");
-      await page.click('.question:not(:disabled) button');
-      await page.waitForFunction(() => document.querySelector(".conversation").textContent.includes("回答已保存"));
-      assert.equal(read().conversation.at(-1).choiceIds[0], "b");
-      assert.match(read().requests.at(-1).text, /Keep the empty start/);
-      assert.equal(read().approvals.outline, undefined);
-      const answerPath = path.join(tmp, "answer.json");
-      fs.writeFileSync(answerPath, JSON.stringify({ questionId: read().conversation.at(-2).id, choiceIds: ["a"], text: "" }));
-      run("answer", { revision: read().revision, input: answerPath }, 1);
-      const question = sendQuestion().conversation.at(-1);
-      publish("outline", { scenarios: [{ ...latestOutline.scenarios[0], context: "New decision" }] });
-      fs.writeFileSync(answerPath, JSON.stringify({ questionId: question.id, choiceIds: ["a"], text: "" }));
-      run("answer", { revision: read().revision, input: answerPath }, 1);
-      approve("outline"); approve("storyboard"); approve("review");
-      await page.reload({ waitUntil: "networkidle0" });
-      await page.click('[data-tab="review"]');
-      await page.type('[data-path="notes"]', "Hold the result longer.");
-      await page.click('[data-action="save"]');
-      await page.waitForFunction(() => document.getElementById("notice").textContent.includes("已保存到项目"));
-      assert.equal(read().documents.review.notes, "Hold the result longer.");
-      assert.equal(read().release, null);
-      assert.equal(read().approvals.review, undefined);
-      const response = await fetch(`${base}/api/action`, {
-        method: "POST", headers: { "X-Director-Token": token, "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "publish", stage: "review", revision: read().revision, data: { ...read().documents.review, summary: "Fake production claim" } })
-      });
-      assert.equal(response.status, 400);
-      await page.reload({ waitUntil: "networkidle0" });
-      await page.click('[data-tab="review"]');
-      assert.equal(await page.$eval('[data-path="notes"]', (el) => el.value), "Hold the result longer.");
+    await page.setViewport({ width: 1440, height: 960 });
+    const messagePath = path.join(tmp, "message.json");
+    fs.writeFileSync(messagePath, JSON.stringify({ stage: "outline", kind: "single", text: "Legacy question", choices: [{ id: "a", label: "Collect orders" }] }));
+    const question = run("message", { revision: read().revision, input: messagePath }).conversation.at(-1);
+    const answerPath = path.join(tmp, "answer.json");
+    fs.writeFileSync(answerPath, JSON.stringify({ questionId: question.id, choiceIds: ["a"], text: "Keep the empty start." }));
+    run("answer", { revision: read().revision, input: answerPath });
+    assert.equal(read().conversation.at(-1).choiceIds[0], "a");
+    assert.equal(read().approvals.outline, undefined);
+    run("answer", { revision: read().revision, input: answerPath }, 1);
+    await page.click('[data-tab="selection"]');
+    publish("outline", { scenarios: [{ ...latestOutline.scenarios[0], context: "Native Agent updated this result" }] });
+    await page.waitForFunction(() => document.querySelector('[data-tab="outline"]').getAttribute("aria-current") === "step", { timeout: 8000 });
+    assert.equal(await page.$eval('[data-path="scenarios.0.context"]', (el) => el.value), "Native Agent updated this result");
+    assert.equal(await page.$("aside, #feedback, .conversation, [data-question]"), null);
+    approve("outline");
+    await page.waitForFunction(() => document.querySelector('[data-tab="storyboard"]').getAttribute("aria-current") === "step", { timeout: 8000 });
+    await page.click(".shot summary");
+    await page.$eval('[data-path="shots.0.direction.camera"]', (el) => { el.value = "Browser camera correction"; el.dispatchEvent(new Event("input", { bubbles: true })); });
+    await page.click('[data-action="save"]');
+    await page.waitForFunction(() => document.getElementById("notice").textContent.includes("已保存到项目"));
+    assert.equal(read().documents.storyboard.shots[0].direction.camera, "Browser camera correction");
+    approve("storyboard"); approve("review");
+    await page.reload({ waitUntil: "networkidle0" });
+    await page.click('[data-tab="review"]');
+    await page.type('[data-path="notes"]', "Hold the result longer.");
+    await page.click('[data-action="save"]');
+    await page.waitForFunction(() => document.getElementById("notice").textContent.includes("已保存到项目"));
+    assert.equal(read().documents.review.notes, "Hold the result longer.");
+    assert.equal(read().release, null);
+    assert.equal(read().approvals.review, undefined);
+    const response = await fetch(`${base}/api/action`, {
+      method: "POST", headers: { "X-Director-Token": token, "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "publish", stage: "review", revision: read().revision, data: { ...read().documents.review, summary: "Fake production claim" } })
+    });
+    assert.equal(response.status, 400);
+    await page.reload({ waitUntil: "networkidle0" });
+    await page.click('[data-tab="review"]');
+    assert.equal(await page.$eval('[data-path="notes"]', (el) => el.value), "Hold the result longer.");
+    await page.setRequestInterception(true);
+    let holdNextRead = true, releaseRead;
+    const heldRead = new Promise((resolve) => { releaseRead = resolve; });
+    const intercept = (request) => {
+      if (holdNextRead && request.url().endsWith("/api/project")) {
+        holdNextRead = false; releaseRead(request);
+      } else request.continue();
+    };
+    page.on("request", intercept);
+    await page.click('[data-action="refresh"]');
+    const delayedRead = await heldRead;
+    await page.$eval('[data-path="notes"]', (el) => {
+      el.value += " New edit during refresh.";
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await delayedRead.respond({ status: 200, contentType: "application/json", body: JSON.stringify(read()) });
+    await page.waitForNetworkIdle();
+    assert.equal(await page.$eval('[data-path="notes"]', (el) => el.value), "Hold the result longer. New edit during refresh.");
+    assert.equal(read().documents.review.notes, "Hold the result longer.");
+    page.off("request", intercept);
+    await page.setRequestInterception(false);
     assert.deepEqual(errors, []);
-    console.log("PASS: real CLI init/publish/approve, stage gates, 1 step/3 shots, immutable history, invalid input, stale revisions, release invalidation, token/origin checks, browser editing, feedback/resolution, agent polling, unsaved-draft preservation and 320–1440 layouts.");
+    console.log("PASS: native Agent CLI-to-browser stage updates, result-only UI, homepage, browser-to-Agent outline/shot/review edits, stale-draft protection, stage gates, history, legacy records, access checks and 320–1440 layouts.");
   } finally {
     if (browser) await browser.close();
     if (server && server.exitCode === null) { server.kill(); await new Promise((r) => server.once("exit", r)); }

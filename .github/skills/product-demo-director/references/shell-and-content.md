@@ -2,8 +2,9 @@
 
 ## The shell: safe places for visual design
 
-Brand mark, header, footer, navigation, stage progress, conversation/feedback
-panel, action buttons, sidebar empty states, and the Skill introduction.
+Brand mark, header, footer, navigation, stage progress, action buttons, waiting
+states, and the Skill introduction. The native Agent conversation is outside
+this website and must not be recreated as a sidebar.
 
 Use a consistent restrained palette: warm off-white, muted lavender, sage green,
 and dark readable text. Original line illustrations may decorate the introduction
@@ -57,6 +58,8 @@ invalidate their approvals, or overwrite imported evidence.
 Changes to a stage document must invalidate affected approvals even if its UI
 still looks the same.
 
-The current browser feedback form is not an autonomous model chat: it persists
-requests for the current Agent to read. Do not design fake replies or simulated
-analysis progress to conceal that boundary.
+The user talks to Codex in its native conversation; Codex runs the Skill and
+opens this page in its in-app browser. The page is a result viewer/editor, not
+a chat client waiting for a model API. Browser saves are read by the Agent on
+the next native turn, while Agent publications appear through viewer polling.
+Never make the user send the same feedback in two different chat boxes.
