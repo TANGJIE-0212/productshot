@@ -4,6 +4,14 @@ An Agent-led workspace for planning product demo videos. Give your Agent a
 product URL or repository, discuss what to demonstrate, and refine the story
 and shots in a shared local project.
 
+## Agreed interaction direction
+
+See [the interaction design](docs/productshot-interaction-design.md) (2026-09-23):
+native MCP forms for product intake, features/audience and scenario decisions;
+a shared web workspace for shot editing and preview. The document distinguishes
+the agreed target from implemented behavior and pending host validation.
+The existing browser workflow below remains available during this transition.
+
 ## Current version: Product Demo Director
 
 The portable [Skill](.github/skills/product-demo-director/SKILL.md) runs inside
