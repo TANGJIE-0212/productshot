@@ -119,6 +119,96 @@ URL, not the old computer's access token. Tell the Agent if the product repo or
 artifact paths changed; old evidence is not automatically reverified. Without
 the private folder, provide a product URL/repo to start a new project.
 
+## Experimental MCP App: feature picker
+
+The `mcp-app` package is an optional, local stdio MCP server with a self-contained
+MCP App. It is separate from the existing browser workflow and does not change
+existing projects unless the user explicitly confirms feature picks.
+
+The Agent researches the supplied product, publishes evidence-backed discovery,
+and opens a multi-select card directly in a compatible host. The card supports
+recommended defaults, custom text and **Confirm and continue**. It does not ask
+"whole product or specific features" first. Existing saved choices take priority
+over recommendations, including custom-only choices.
+
+The four tools are:
+
+- `productshot_read_project`: read the bound private project.
+- `productshot_publish_discovery`: publish the Agent's analysis at a checked revision.
+- `productshot_select_features`: open the App with `recommendedIds`; no writes.
+- `productshot_save_features`: save explicit choices without approving a stage.
+
+The server provides workflow instructions; a Skill is not required for this
+experimental entry point. It does not inspect the product or call a model itself.
+It is bound to one project supplied at startup, not an arbitrary tool-provided
+filesystem path. The other director stages still use the existing runner/viewer.
+
+### Setup
+
+Requires Node.js 22.12+ for this package and its browser checks:
+
+```powershell
+Set-Location mcp-app
+npm ci
+npm run build
+npm test
+Set-Location ..
+node .github\skills\product-demo-director\scripts\director.mjs init --project .director-projects\mcp-demo --name 'My demo' --source 'https://example.com'
+```
+
+Dependencies are isolated from the earlier Next.js/Remotion prototype. The App
+uses the compatible MCP SDK 1.x / MCP Apps SDK 1.x pair, pinned in its lockfile.
+No API key, external scripts, hosted backend or illustration service is needed.
+Do not initialize over an existing project; use its path directly to resume.
+
+Configure a local stdio server in your host, using absolute paths:
+
+```json
+{
+  "mcpServers": {
+    "productshot": {
+      "command": "node",
+      "args": [
+        "C:\\path\\to\\productshot\\mcp-app\\server.mjs",
+        "--project",
+        "C:\\path\\to\\productshot\\.director-projects\\mcp-demo"
+      ]
+    }
+  }
+}
+```
+
+This shows the common `mcpServers` format; VS Code's `.vscode/mcp.json` uses
+`servers` instead. Use host-appropriate absolute paths on macOS/Linux. Trust and
+enable the server in the host, then refresh tools or start a new session as
+required. Ask the Agent to use ProductShot to inspect the project's source,
+publish discovery and open `productshot_select_features` with recommended IDs.
+
+### Host compatibility and confirmation
+
+Ordinary MCP support does **not** imply MCP Apps support. The host must support
+the `io.modelcontextprotocol/ui` extension and `text/html;profile=mcp-app`.
+Layout and placement belong to the host, not ProductShot.
+
+On confirmation, the App first saves through `tools/call`, then requests a user
+message through `ui/message`. It checks the host's text-message capability and
+reports rejection or transport failure separately from a successful save.
+Notification retry does not repeat the save. If messaging is unavailable, the
+App explicitly asks the user to continue in chat. A successful message request
+means the host accepted it, not proof that an Agent generated a reply.
+
+Without Apps support, the tools return the capability list for explicit native
+chat selection. The server never silently treats recommended defaults as consent.
+Feature confirmation does not approve audience/storyboard or authorize product
+writes, recording, paid generation or publishing.
+
+`npm test` in `mcp-app` tests real stdio MCP and a browser running the official
+SDK AppBridge in an isolated **test host**. It covers defaults, custom selections,
+stale writes, safe text rendering, persistence, message delivery/rejection/retry,
+unsupported messaging, and narrow layouts. It does **not** establish compatibility
+or automatic Agent continuation in VS Code, Claude or any other production host.
+Those require a separate live-host acceptance check.
+
 ## Earlier video prototype
 
 This repository also includes the earlier Next.js + Remotion prototype in

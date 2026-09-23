@@ -75,7 +75,7 @@ function validate(stage, data, project) {
     if (data.notes !== undefined && (typeof data.notes !== "string" || data.notes.length > 6000)) fail("Invalid review notes");
   } else fail("Unknown stage");
 }
-function load(dir) {
+export function load(dir) {
   const state = json(path.join(dir, "project.json"));
   if (state.format !== "productshot-director-project" || state.version !== 1) fail("Unsupported project", 422);
   return state;
@@ -111,7 +111,7 @@ function mutate(dir, revision, actor, operation) {
     return project;
   });
 }
-function publish(dir, revision, stage, data, actor) {
+export function publish(dir, revision, stage, data, actor) {
   if (!stages.includes(stage)) fail("Unknown stage");
   return mutate(dir, revision, actor, (project) => {
     prerequisites(project, stage);
@@ -205,7 +205,7 @@ function answer(dir, revision, input, actor) {
     return { type: "answer", stage: question.stage, requestId };
   });
 }
-function initialize(dir, name, source) {
+export function initialize(dir, name, source) {
   text(name, "name", 150); text(source, "source", 2000);
   if (fs.existsSync(path.join(dir, "project.json"))) fail("Project already exists; refusing overwrite", 409);
   fs.mkdirSync(path.join(dir, "history"), { recursive: true });
@@ -265,6 +265,7 @@ async function serve(dir, port) {
   console.log(JSON.stringify({ status: "listening", url: `${origin}/#${token}`, project: dir, note: "Open this result viewer in the host Agent's in-app browser. Keep conversation in the native Agent; read the project before continuing." }));
 }
 
+async function main() {
 const [command, ...args] = process.argv.slice(2);
 const options = {};
 for (let i = 0; i < args.length; i += 2) {
@@ -303,3 +304,6 @@ try {
   console.error(JSON.stringify({ error: error.message, status: error.status || 500 }));
   process.exitCode = 1;
 }
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) await main();
