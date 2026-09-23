@@ -119,24 +119,30 @@ URL, not the old computer's access token. Tell the Agent if the product repo or
 artifact paths changed; old evidence is not automatically reverified. Without
 the private folder, provide a product URL/repo to start a new project.
 
-## Experimental MCP App: feature picker
+## Experimental MCP: native feature selection
 
-The `mcp-app` package is an optional, local stdio MCP server with a self-contained
-MCP App. It is separate from the existing browser workflow and does not change
+The `mcp-app` package is an optional, local stdio MCP server using native MCP
+Elicitation for feature selection, with an optional legacy MCP App viewer.
+It is separate from the existing browser workflow and does not change
 existing projects unless the user explicitly confirms feature picks.
 
 The Agent researches the supplied product, publishes evidence-backed discovery,
-and opens a multi-select card directly in a compatible host. The card supports
-recommended defaults, custom text and **Confirm and continue**. It does not ask
+and requests a native multi-select form in a compatible host. The form supports
+recommended defaults and custom text. The tool waits for the form response,
+saves only accepted choices, then returns the result to the Agent's existing
+tool call. No `ui/message`, second chat message, or App wake-up is needed.
+It does not ask
 "whole product or specific features" first. Existing saved choices take priority
 over recommendations, including custom-only choices.
 
-The four tools are:
+The tools are:
 
 - `productshot_read_project`: read the bound private project.
 - `productshot_publish_discovery`: publish the Agent's analysis at a checked revision.
-- `productshot_select_features`: open the App with `recommendedIds`; no writes.
+- `productshot_select_features`: request native form input with `recommendedIds`,
+  wait for confirmation, validate and save accepted picks, and return the result.
 - `productshot_save_features`: save explicit choices without approving a stage.
+- `productshot_open_feature_app`: optional read-only legacy App viewer.
 
 The server provides workflow instructions; a Skill is not required for this
 experimental entry point. It does not inspect the product or call a model itself.
@@ -186,7 +192,16 @@ publish discovery and open `productshot_select_features` with recommended IDs.
 
 ### Host compatibility and confirmation
 
-Ordinary MCP support does **not** imply MCP Apps support. The host must support
+Ordinary MCP support does **not** imply Elicitation support. The client must
+advertise `elicitation.form` (legacy `elicitation: {}` also means form support).
+URL-only or unsupported clients get an explicit native-chat fallback, not an
+invented form or automatic acceptance of defaults. Multi-select uses the standard
+array enum schema; rendering and default display depend on the host version.
+Cancel/decline, invalid input, timeout, transport failure and stale revisions
+never silently save choices. An accepted response returns to the pending tool;
+actual Agent continuation still requires a functioning host tool loop.
+
+The optional legacy App additionally requires
 the `io.modelcontextprotocol/ui` extension and `text/html;profile=mcp-app`.
 Layout and placement belong to the host, not ProductShot.
 
@@ -196,19 +211,22 @@ reports rejection or transport failure separately from a successful save.
 Notification retry does not repeat the save. If messaging is unavailable, the
 App explicitly asks the user to continue in chat. A successful message request
 means the host accepted it, not proof that an Agent generated a reply.
-In the inspected VS Code 1.135 Agent Host path, `ui/message` fills the chat
-composer rather than sending it: the user must press Send. That path also forwards
+The inspected VS Code 1.135 Agent Host does not advertise the App `message`
+capability, so this App does not send that request. Its dormant `ui/message`
+handler would only fill the composer, not send a turn. This is why the default
+intake now uses Elicitation instead. That host path also forwards
 tool-result content without `structuredContent`, so the App accepts the same
 validated view model from a JSON text block. Invalid/missing data remains an error;
 the App never fabricates feature defaults to mask a transport failure.
 
-Without Apps support, the tools return the capability list for explicit native
-chat selection. The server never silently treats recommended defaults as consent.
+The server never silently treats recommended defaults as consent.
 Feature confirmation does not approve audience/storyboard or authorize product
 writes, recording, paid generation or publishing.
 
-`npm test` in `mcp-app` tests real stdio MCP and a browser running the official
-SDK AppBridge in an isolated **test host**. It covers defaults, custom selections,
+`npm test` in `mcp-app` tests real stdio MCP native forms (pending tool, acceptance,
+decline/cancel, malformed responses, conflicts, legacy and unsupported clients)
+and a browser running the official SDK AppBridge in an isolated **test host**.
+It also covers defaults, custom selections,
 stale writes, safe text rendering, persistence, message delivery/rejection/retry,
 unsupported messaging, and narrow layouts. It does **not** establish compatibility
 or automatic Agent continuation in VS Code, Claude or any other production host.

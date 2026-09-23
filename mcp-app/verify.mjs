@@ -8,6 +8,7 @@ import { build } from "esbuild";
 import puppeteer from "puppeteer";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { ElicitRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { toolData } from "./tool-data.js";
 
 const root = fileURLToPath(new URL("./", import.meta.url));
@@ -33,9 +34,10 @@ function cli(...args) {
   return JSON.parse(result.stdout);
 }
 
-async function connect(capabilities = appsCapability) {
+async function connect(capabilities = appsCapability, onElicit) {
   const client = new Client({ name: "ProductShot regression client", version: "0.1.0" }, { capabilities });
   clients.push(client);
+  if (onElicit) client.setRequestHandler(ElicitRequestSchema, onElicit);
   await client.connect(new StdioClientTransport({ command: process.execPath, args: [path.join(root, "server.mjs"), "--project", project], stderr: "pipe" }));
   return client;
 }
@@ -52,12 +54,15 @@ try {
   const client = await connect();
   const call = (name, args = {}) => client.callTool({ name, arguments: args });
   const listed = await client.listTools();
-  const pickerTool = listed.tools.find((tool) => tool.name === "productshot_select_features");
+  const pickerTool = listed.tools.find((tool) => tool.name === "productshot_open_feature_app");
+  const formTool = listed.tools.find((tool) => tool.name === "productshot_select_features");
+  assert.equal(formTool._meta?.ui, undefined, "Native form must not open a legacy App");
+  assert.equal(formTool.annotations.readOnlyHint, false);
   assert.equal(pickerTool._meta.ui.resourceUri, "ui://productshot/feature-picker.html");
   assert.ok((await call("productshot_select_features")).isError, "Must inspect product first");
   data(await call("productshot_publish_discovery", { revision: 0, discovery }));
-  const picker = data(await call("productshot_select_features", { recommendedIds: ["tables", "forms"] }));
-  const serializedPicker = await call("productshot_select_features", { recommendedIds: ["tables", "forms"] });
+  const picker = data(await call("productshot_open_feature_app", { recommendedIds: ["tables", "forms"] }));
+  const serializedPicker = await call("productshot_open_feature_app", { recommendedIds: ["tables", "forms"] });
   assert.equal(serializedPicker.content.length, 1, "Host text concatenation must preserve a single JSON document");
   assert.deepEqual(toolData({ content: serializedPicker.content }), picker);
   assert.throws(() => toolData({ content: [{ type: "text", text: "not JSON" }] }), /没有传递/);
@@ -68,7 +73,7 @@ try {
   assert.equal(picker.selection, null);
   assert.equal(picker.appsSupported, true);
   assert.equal(cli("read").revision, 1, "Opening a form must not save defaults");
-  assert.ok((await call("productshot_select_features", { recommendedIds: ["missing"] })).isError);
+  assert.ok((await call("productshot_open_feature_app", { recommendedIds: ["missing"] })).isError);
   const resource = await client.readResource({ uri: pickerTool._meta.ui.resourceUri });
   const html = resource.contents[0].text;
   assert.equal(resource.contents[0].mimeType, "text/html;profile=mcp-app");
@@ -85,6 +90,17 @@ try {
   const plainClient = await connect({});
   const fallback = data(await plainClient.callTool({ name: "productshot_select_features", arguments: { recommendedIds: ["tables"] } }));
   assert.equal(fallback.appsSupported, false);
+  assert.equal(fallback.action, "unsupported");
+  assert.equal(fallback.interaction, "native-chat");
+  const firstFormClient = await connect({ elicitation: { form: {} } }, async (request) => {
+    assert.deepEqual(request.params.requestedSchema.properties.capabilityIds.default, ["tables", "forms"]);
+    assert.equal(request.params.requestedSchema.properties.additional.default, "");
+    return { action: "cancel" };
+  });
+  data(await firstFormClient.callTool({ name: "productshot_select_features", arguments: { recommendedIds: ["tables", "forms"] } }));
+  assert.equal(cli("read").revision, 1);
+  const urlOnlyClient = await connect({ elicitation: { url: {} } });
+  assert.equal(data(await urlOnlyClient.callTool({ name: "productshot_select_features", arguments: {} })).action, "unsupported");
 
   // This is an SDK test host, not evidence of a real Agent generating a reply.
   const bridgeBuild = await build({
@@ -136,7 +152,7 @@ try {
     return { page, frame };
   }
 
-  const { page, frame } = await openApp(await call("productshot_select_features", { recommendedIds: ["tables", "forms"] }));
+  const { page, frame } = await openApp(await call("productshot_open_feature_app", { recommendedIds: ["tables", "forms"] }));
   assert.equal(await frame.$$eval("input:checked", (items) => items.length), 2);
   assert.equal(await frame.evaluate(() => typeof window.unsafe), "undefined");
   assert.match(await frame.$eval("#choices", (el) => el.textContent), /<script>unsafe/);
@@ -155,7 +171,7 @@ try {
 
   await frame.click('[data-capability="charts"]');
   data(await call("productshot_save_features", { revision: 2, capabilityIds: ["forms"], additional: "" }));
-  await page.evaluate((result) => window.bridge.sendToolResult(result), await call("productshot_select_features"));
+  await page.evaluate((result) => window.bridge.sendToolResult(result), await call("productshot_open_feature_app"));
   await frame.waitForFunction(() => document.querySelector("#status").textContent.includes("项目有新版本"));
   assert.equal(await frame.$eval('[data-capability="charts"]', (el) => el.checked), true);
   await frame.click("#confirm");
@@ -188,15 +204,15 @@ try {
   await frame.waitForFunction(() => document.querySelector("#status").textContent.includes("继续请求已交给宿主"));
   assert.equal(cli("read").revision, savedRevision, "Retry notification must not repeat write");
 
-  const restored = data(await call("productshot_select_features", { recommendedIds: ["tables", "charts"] }));
+  const restored = data(await call("productshot_open_feature_app", { recommendedIds: ["tables", "charts"] }));
   assert.deepEqual(restored.selection.capabilityIds, [], "Custom-only selection must not be replaced by defaults");
-  const contentOnly = await openApp(await call("productshot_select_features"), { messages: true, contentOnly: true });
+  const contentOnly = await openApp(await call("productshot_open_feature_app"), { messages: true, contentOnly: true });
   assert.equal(await contentOnly.frame.$eval("#additional", (el) => el.value), "Only custom");
   await contentOnly.frame.click('[data-capability="tables"]');
   await contentOnly.frame.click("#confirm");
   await contentOnly.frame.waitForFunction(() => document.querySelector("#status").textContent.includes("继续请求已交给宿主"));
   assert.deepEqual(cli("read").documents.selection.capabilityIds, ["tables"]);
-  const unsupported = await openApp(await call("productshot_select_features"), { messages: false });
+  const unsupported = await openApp(await call("productshot_open_feature_app"), { messages: false });
   const messageCount = messages.length;
   await unsupported.frame.click("#confirm");
   await unsupported.frame.waitForFunction(() => document.querySelector("#status").textContent.includes("未声明支持"));
@@ -224,9 +240,72 @@ try {
   assert.equal(changed.selection.audience, "Existing audience");
   assert.deepEqual(changed.selection.audienceOptions, []);
   assert.equal(cli("read").approvals.selection, undefined, "Changed picks invalidate old approval");
+  let responseHandler = async () => ({ action: "cancel" });
+  const formClient = await connect({ elicitation: { form: {} } }, (request) => responseHandler(request));
+  const select = (recommendedIds = ["tables"]) => formClient.callTool({ name: "productshot_select_features", arguments: { recommendedIds } });
+  const beforeForm = cli("read").revision;
+  for (const action of ["cancel", "decline"]) {
+    responseHandler = async (request) => {
+      assert.equal(request.params.mode, "form");
+      assert.deepEqual(request.params.requestedSchema.properties.capabilityIds.default, ["charts"]);
+      assert.equal(cli("read").revision, beforeForm, "Form opening must not write");
+      return { action };
+    };
+    assert.equal(data(await select()).action, action);
+    assert.equal(cli("read").revision, beforeForm);
+  }
+  let accept;
+  let formOpened;
+  const opened = new Promise((resolve) => { formOpened = resolve; });
+  responseHandler = async () => {
+    formOpened();
+    return new Promise((resolve) => { accept = resolve; });
+  };
+  let completed = false;
+  const pending = select().then((value) => { completed = true; return value; });
+  await opened;
+  assert.equal(completed, false, "Tool must wait for the native form, not return then wake the Agent");
+  assert.equal(cli("read").revision, beforeForm);
+  accept({ action: "accept", content: { capabilityIds: ["tables", "forms"], additional: "Native input" } });
+  const accepted = data(await pending);
+  assert.equal(accepted.action, "accept");
+  assert.equal(accepted.saved, true);
+  assert.equal(accepted.interaction, "elicitation");
+  assert.equal(accepted.revision, beforeForm + 1);
+  assert.deepEqual(cli("read").documents.selection.capabilityIds, ["tables", "forms"]);
+  assert.equal(cli("read").documents.selection.audience, "Existing audience");
+  assert.equal(cli("read").approvals.selection, undefined);
+  for (const content of [
+    { capabilityIds: [] },
+    { capabilityIds: ["missing"] },
+    { capabilityIds: ["tables", "tables"] },
+    { additional: "No selected IDs field" },
+  ]) {
+    responseHandler = async () => ({ action: "accept", content });
+    assert.ok((await select()).isError, "Malformed or empty responses must not be saved");
+    assert.equal(cli("read").revision, beforeForm + 1);
+  }
+  responseHandler = async () => {
+    data(await call("productshot_save_features", { revision: cli("read").revision, capabilityIds: ["charts"], additional: "" }));
+    return { action: "accept", content: { capabilityIds: ["forms"], additional: "" } };
+  };
+  assert.ok((await select()).isError, "Changes made while the form is open must cause a conflict");
+  assert.deepEqual(cli("read").documents.selection.capabilityIds, ["charts"]);
+  const legacyFormClient = await connect({ elicitation: {} }, async () => ({ action: "accept", content: { capabilityIds: [], additional: "Custom only" } }));
+  const customOnly = data(await legacyFormClient.callTool({ name: "productshot_select_features", arguments: {} }));
+  assert.deepEqual(customOnly.selection.capabilityIds, []);
+  assert.equal(customOnly.selection.additional, "Custom only");
+  const beforeFailure = cli("read").revision;
+  responseHandler = async (request) => {
+    assert.deepEqual(request.params.requestedSchema.properties.capabilityIds.default, []);
+    assert.equal(request.params.requestedSchema.properties.additional.default, "Custom only");
+    throw new Error("Fixture host elicitation failed");
+  };
+  assert.ok((await select()).isError, "Host form errors must be visible, not accepted");
+  assert.equal(cli("read").revision, beforeFailure);
   saved = cli("read");
   assert.equal((await readdir(path.join(project, "history"))).length, saved.revision + 1);
-  console.log("PASS: stdio MCP, resource, defaults, selection persistence, stale writes, safe text, SDK AppBridge, message rejection/retry, unsupported host, narrow layout.");
+  console.log("PASS: native form pending/accept/cancel/decline, unsupported/legacy clients, malformed/stale answers, plus stdio MCP, App defaults, persistence, safe text, message rejection/retry and narrow layout.");
   console.log("Real Agent rendering and automatic continuation are NOT verified by this test host.");
 } catch (error) {
   if (browser) {

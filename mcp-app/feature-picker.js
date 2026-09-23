@@ -142,7 +142,7 @@ element("reload").addEventListener("click", async () => {
   busy = true;
   controls();
   try {
-    const result = await app.callServerTool({ name: "productshot_select_features", arguments: { recommendedIds: current.recommendedIds } });
+    const result = await app.callServerTool({ name: "productshot_open_feature_app", arguments: { recommendedIds: current.recommendedIds } });
     render(toolData(result));
     pendingMessage = undefined;
     status("已读取最新选择；请检查后确认。");
