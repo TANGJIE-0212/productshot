@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 300" fill="none">
+  <title>A storyteller arranging frames into a connected story</title>
+  <path fill="#FAF9F6" d="M0 0h480v300H0z"/>
+  <path d="M72 238C28 187 53 118 110 91c51-24 90-8 130-26 58-25 135 9 152 73 17 62-10 103-66 113-83 15-199 42-254-13Z" fill="#E8E3EF"/>
+  <path d="M310 177c55-41 94-16 104 14 10 32-9 62-52 67l-123 7c-35-6-33-44 0-60l71-28Z" fill="#DCE6D9"/>
+  <g stroke="#393E35" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M55 265h367" stroke="#A6AC9F"/>
+    <path d="M76 143c-16-31-32-26-28-7 3 13 13 19 28 20M77 167c15-29 31-26 27-9-3 12-15 18-27 21M78 261l-2-117"/>
+    <path d="M63 230h31l-5 34H68l-5-34Z" fill="#C7D4C1"/>
+    <path d="M321 82c-5-16 2-25 15-25 14 0 21 15 12 27" fill="#EBDCC7"/>
+    <path d="M320 76c-4-16 3-28 17-27 12 0 20 9 19 21l-9-2-3-10c-3 10-11 17-24 18Z" fill="#444840"/>
+    <path d="m329 84-2 18 22 4-5-23" fill="#EBDCC7"/>
+    <path d="M319 98c15 4 31 5 39 16 9 14 7 47 0 70l-58-6 6-47c-17 8-37 17-54 15l-2-13 50-27 19-8Z" fill="#BACAB4"/>
+    <path d="m251 135-20-7-6 7 10 9 19 1" fill="#EBDCC7"/>
+    <path d="M355 119c4 15 1 34-6 46l-34-10 2-13 23 3-3-17"/>
+    <path d="m317 144-18-8-8 7 10 10 15 1" fill="#EBDCC7"/>
+    <path d="m300 178-10 33-22 49h19l29-47 11-14 10 59h19l1-74" fill="#444840"/>
+    <path d="m267 258-13 9h31l3-9M337 257l-1 10h30l-11-10" fill="#F8F7F2"/>
+    <path d="M335 74h1m9-1h1M337 83c3 3 6 2 8 0"/>
+    <path d="M124 230h154M137 231v34m128-34v34" stroke="#737D6C"/>
+    <path d="M108 97h100v75H108z" fill="#FAF9F5" transform="rotate(-9 108 97)"/>
+    <path d="m118 111 64-10m-60 26 49-8m-45 24 58-9" stroke="#A8A0B5"/>
+    <path d="M163 165h108v63H163z" fill="#FAF9F5"/>
+    <path d="m186 211 17-17 15 8 26-20" stroke="#8A9F80"/>
+    <circle cx="186" cy="211" r="3" fill="#BACAB4"/><circle cx="244" cy="182" r="3" fill="#BACAB4"/>
+    <path d="M212 69h63v46h-63z" fill="#D1C4DF"/>
+    <path d="m237 81 16 10-16 11V81Z" fill="#FAF9F5" stroke="#FAF9F5"/>
+    <path d="M215 137c15-1 28 0 33 13M242 144l7 7 1-10" stroke="#929584" stroke-dasharray="3 6"/>
+    <path d="m386 104 6 7 11-16"/>
+  </g>
+  <circle cx="125" cy="65" r="5" fill="#D4BD9F"/>
+  <circle cx="402" cy="159" r="4" fill="#B3A4C5"/>
+  <path d="M170 53v11m-5-5h11" stroke="#A5B49A" stroke-width="2" stroke-linecap="round"/>
+</svg>

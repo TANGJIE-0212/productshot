@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 200" fill="none">
+  <title>Building a structure from simple pieces</title>
+  <path fill="#DCD6E4" d="M0 0h340v200H0z"/>
+  <path d="M84 65c19-43 107-48 151-8 34 30 32 91-10 111-51 25-142 13-156-32-7-23 3-52 15-71Z" fill="#FAF9F3"/>
+  <g stroke="#393A35" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M68 171h207" stroke="#B7AFC0"/>
+    <path d="m111 84 113 2-2 85-112-1 1-86Z" fill="#FCFAF7"/><path d="m111 109 112 2m-75-27-1 87m39-87 1 87m-76-33 112-2"/>
+    <path d="M106 79h36v27h-36z" fill="#C4B4D3" transform="rotate(-12 106 79)"/>
+    <path d="M186 50h36v28h-36z" fill="#C6D2BF" transform="rotate(8 186 50)"/>
+    <path d="M153 43c-5-10-2-20 8-23 10-2 18 6 15 18l-5 13" fill="#EBDBC7"/>
+    <path d="m155 47-5 16 24 7 4-23" fill="#EBDBC7"/>
+    <path d="m150 58-23 2-16 20 10 9 15-15 29 7c12 0 14-12 9-18" fill="#9BAA92"/>
+    <path d="m112 80-7 8 7 8 11-7" fill="#EBDBC7"/>
+    <path d="M153 34c-4-11 0-19 10-21 12-1 17 9 13 20l-8-7-15 8Z" fill="#555149"/>
+    <path d="M251 87v16m-8-8h16M82 110v10m-5-5h10" stroke="#AA99BC"/>
+  </g>
+</svg>

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 200" fill="none">
+  <title>Bringing scattered information into one place</title>
+  <path fill="#D5DFD0" d="M0 0h340v200H0z"/>
+  <path d="M70 129c-19-32 4-88 62-92 53-3 120-3 133 56 15 65-50 77-100 81-44 4-78-9-95-45Z" fill="#FAF9F3"/>
+  <g stroke="#393E35" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M66 172h215" stroke="#ACB6A3"/>
+    <path d="m135 108 42-25 68 25-43 27-67-27Z" fill="#FAF9F4"/>
+    <path d="m135 108 1 40 67 27-1-40M202 135l43-27v41l-42 26" fill="#C0CFB6"/>
+    <path d="m155 105 43 17 26-16" stroke="#829474"/>
+    <path d="M85 51h42v54H85z" fill="#FAF9F4" transform="rotate(-18 85 51)"/>
+    <path d="m94 63 22-7m-17 19 22-7m-19 19 19-6" stroke="#A4AE97"/>
+    <path d="m158 49 42 6-7 46-42-7 7-45Z" fill="#CEC3DA"/>
+    <path d="m166 64 22 3m-23 8 22 3" stroke="#8F829E"/>
+    <path d="M77 126c8-5 20-5 31 1m-9-7 10 7-10 5" stroke-dasharray="3 5"/>
+    <path d="M257 65v33m-10-22c-13-11-2-24 5-17 4 5 5 17 5 17m0 7c15-19 24-7 18 0-6 6-18 9-18 9" fill="#A8B99B"/>
+  </g>
+  <circle cx="68" cy="81" r="4" fill="#C3AD92"/>
+  <circle cx="224" cy="57" r="3" fill="#AF9EBF"/>
+</svg>

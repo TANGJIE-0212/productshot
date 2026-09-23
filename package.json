@@ -1,0 +1,43 @@
+{
+  "name": "productshot",
+  "version": "1.0.0",
+  "description": "AI-powered product introduction video generator",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "remotion:studio": "remotion studio src/remotion/index.ts",
+    "remotion:render": "remotion render src/remotion/index.ts ProductVideo out/video.mp4",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@remotion/bundler": "^4.0.429",
+    "@remotion/cli": "^4.0.0",
+    "@remotion/player": "^4.0.0",
+    "@remotion/renderer": "^4.0.0",
+    "@remotion/transitions": "^4.0.0",
+    "@remotion/zod-types": "^4.0.0",
+    "clsx": "^2.1.0",
+    "lucide-react": "^0.460.0",
+    "nanoid": "^5.0.0",
+    "next": "^14.2.0",
+    "openai": "^4.70.0",
+    "puppeteer": "^23.0.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "remotion": "^4.0.0",
+    "tailwind-merge": "^2.6.0",
+    "zod": "4.3.6",
+    "zustand": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.0",
+    "postcss": "^8.4.0",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.6.0"
+  }
+}

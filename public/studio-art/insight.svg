@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 200" fill="none">
+  <title>Looking closer to find the useful insight</title>
+  <path fill="#DDD7E6" d="M0 0h340v200H0z"/>
+  <path d="M73 80c19-52 138-60 180 0 27 40-2 91-68 96-66 5-137-30-112-96Z" fill="#FAF9F3"/>
+  <g stroke="#39383B" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M65 174h215" stroke="#B6AFBA"/>
+    <path d="m97 69 132 2-1 94-132-2 1-94Z" fill="#FAF9F6"/>
+    <path d="M110 150h102M110 139v-22h18v22m13 0V99h18v40m13 0V83h18v56" fill="#BBCBB3" stroke="#8B9F81"/>
+    <circle cx="202" cy="91" r="32" fill="#FCFAF6" fill-opacity=".8"/>
+    <path d="m224 114 29 31" stroke-width="10" stroke="#A99AB9"/>
+    <path d="m225 113 29 31" stroke-width="2"/>
+    <path d="m185 92 11 10 21-27" stroke="#8B9F81" stroke-width="3"/>
+    <path d="M77 43v15m-7-7h14" stroke="#BBA98D"/>
+    <path d="m254 59 6-9m-4 19 11-1" stroke="#A99AB9"/>
+  </g>
+</svg>

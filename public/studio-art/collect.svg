@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 200" fill="none">
+  <title>A new response joining the shared workflow</title>
+  <path fill="#D7E0D3" d="M0 0h340v200H0z"/>
+  <path d="M86 47c43-20 120-6 153 26 37 35 20 91-43 101-69 11-164-29-143-80 6-17 16-39 33-47Z" fill="#FAF9F3"/>
+  <g stroke="#393E35" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M70 173h201" stroke="#ADB8A4"/>
+    <path d="M109 36h97v124h-97z" fill="#FAF9F4" transform="rotate(-6 109 36)"/>
+    <path d="m126 54 48-5m-47 21 65-7m-64 22 65-7m-64 22 44-5" stroke="#B4B7AA"/>
+    <path d="m136 117 47-4 2 19-47 4-2-19Z" fill="#C6B7D4"/>
+    <path d="m185 101 60 8-6 51-60-8 6-51Z" fill="#C4D1BC"/>
+    <path d="m185 102 24 27 35-20"/>
+    <circle cx="243" cy="83" r="18" fill="#FCFAF5"/>
+    <path d="m235 82 6 6 10-13" stroke="#8B9B7F"/>
+    <path d="m77 113 13-6m-8 18 13-2" stroke="#AA97BB"/>
+    <path d="m217 41 3 10m-10-3 14-3" stroke="#BBA78D"/>
+  </g>
+</svg>

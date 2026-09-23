@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 200" fill="none">
+  <title>Connecting three moments into one story</title>
+  <path fill="#E3DACE" d="M0 0h340v200H0z"/>
+  <path d="M91 57c31-37 130-32 151 22 21 48-8 93-77 98-67 4-105-77-74-120Z" fill="#FAF9F3"/>
+  <g stroke="#3D3A34" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M73 173h197" stroke="#B7AA99"/>
+    <path d="M92 120c2-45 46-69 82-39s79 29 80-7" stroke="#998BA9" stroke-dasharray="4 6"/>
+    <path d="m247 79 8-8 4 11" stroke="#998BA9"/>
+    <rect x="65" y="101" width="55" height="55" rx="9" fill="#C9D5C0"/>
+    <rect x="139" y="48" width="55" height="55" rx="9" fill="#D0C3DD"/>
+    <rect x="223" y="115" width="55" height="55" rx="9" fill="#FAF9F4"/>
+    <path d="M79 119h27m-27 10h27m-27 10h17M153 88V71m10 17V64m10 24V76M238 131h26m-26 9h26m-26 9h15" stroke="#727166"/>
+    <path d="m125 153 12 6m-10-1 10 1-5-9" stroke="#8B9E7C"/>
+  </g>
+</svg>

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 150" fill="none">
+  <title>ProductShot shell illustration: connect moments into a story</title>
+  <path d="M0 0h280v150H0z" fill="#EFF2E9"/>
+  <path d="M43 79C23 24 98 15 137 33c38 17 89-20 105 18 23 51-26 91-83 77C94 114 55 115 43 79Z" fill="#FAF9F4"/>
+  <g stroke="#505747" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="m46 60 47-9 10 55-48 8-9-54Z" fill="#D7CDDF"/>
+    <path d="m58 70 24-5m-22 15 25-4m-23 14 17-3" stroke="#8D7D9B"/>
+    <path d="m121 42 54 3-3 58-55-2 4-59Z" fill="#C8D5BF"/>
+    <path d="m139 60 18 12-19 10 1-22Z" fill="#FAF9F4" stroke="#FAF9F4"/>
+    <path d="m191 67 46-2 3 48-47 4-2-50Z" fill="#FAF9F4"/>
+    <path d="m202 91 8 8 16-23" stroke="#8C9D7B"/>
+    <path d="M67 127h163" stroke="#B8C0AB"/>
+    <path d="m99 82 12-3m64 4 11 5" stroke="#A498AF" stroke-dasharray="2 5"/>
+  </g>
+</svg>
