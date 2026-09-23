@@ -58,6 +58,7 @@ try {
   data(await call("productshot_publish_discovery", { revision: 0, discovery }));
   const picker = data(await call("productshot_select_features", { recommendedIds: ["tables", "forms"] }));
   const serializedPicker = await call("productshot_select_features", { recommendedIds: ["tables", "forms"] });
+  assert.equal(serializedPicker.content.length, 1, "Host text concatenation must preserve a single JSON document");
   assert.deepEqual(toolData({ content: serializedPicker.content }), picker);
   assert.throws(() => toolData({ content: [{ type: "text", text: "not JSON" }] }), /没有传递/);
   assert.throws(() => toolData({ structuredContent: {}, content: serializedPicker.content }), /无效/);

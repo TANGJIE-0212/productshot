@@ -59,11 +59,10 @@ function domainErrors(handler) {
   };
 }
 
-function result(value, text = JSON.stringify(value)) {
-  const serialized = JSON.stringify(value);
-  const content = [{ type: "text", text }];
-  if (text !== serialized) content.push({ type: "text", text: serialized });
-  return { content, structuredContent: value };
+function result(value, message) {
+  const payload = message === undefined ? value : { ...value, message };
+  // Keep one JSON block: some hosts concatenate all text blocks before forwarding.
+  return { content: [{ type: "text", text: JSON.stringify(payload) }], structuredContent: payload };
 }
 
 function checkIds(chosen, capabilities) {
