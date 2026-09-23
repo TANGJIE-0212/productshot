@@ -32,8 +32,8 @@ function validate(stage, data, project) {
     const allowed = new Set(project.documents.discovery?.capabilities.map((c) => c.id) || []);
     if (data.capabilityIds.some((id) => !allowed.has(id)) || new Set(data.capabilityIds).size !== data.capabilityIds.length) fail("Unknown or duplicate capability");
     if (typeof data.additional !== "string" || data.additional.length > 2000) fail("Invalid additional capability text");
-    if (!data.capabilityIds.length && !data.additional.trim()) fail("Select or add at least one capability");
-    text(data.audience, "audience", 1000);
+    if (data.scope !== "whole" && !data.capabilityIds.length && !data.additional.trim()) fail("Select or add at least one capability");
+    if (typeof data.audience !== "string" || data.audience.length > 1000) fail("Invalid audience");
     if (!["single", "related", "whole"].includes(data.scope)) fail("Invalid scope");
   } else if (stage === "outline") {
     list(data.scenarios, "scenarios", 1, 8); ids(data.scenarios, "scenarios");
@@ -89,7 +89,8 @@ function approved(project, stage) {
 }
 function prerequisites(project, stage) {
   const index = stages.indexOf(stage);
-  if (index > 0 && stages.slice(0, index).some((s) => !approved(project, s))) fail("Confirm all previous stages first", 409);
+  if (index > 0 && !project.documents.discovery) fail("Inspect the product before selecting features", 409);
+  if (index > 1 && stages.slice(1, index).some((s) => !approved(project, s))) fail("Confirm all previous stages first", 409);
 }
 function mutate(dir, revision, actor, operation) {
   return exclusive(dir, () => {
@@ -130,6 +131,7 @@ function approve(dir, revision, stage, note, actor) {
   return mutate(dir, revision, actor, (project) => {
     prerequisites(project, stage);
     validate(stage, project.documents[stage], project);
+    if (stage === "selection") text(project.documents.selection.audience, "Choose an audience before confirming this stage", 1000);
     project.approvals[stage] = { hash: digest(project.documents[stage]), at: new Date().toISOString(), note, actor };
     if (stage === "review") project.release = structuredClone(project.documents.review);
     return { type: "approve", stage };

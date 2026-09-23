@@ -9,15 +9,18 @@
   const keys = Object.keys(names);
   const pages = { selection: ["Features & Audience", "功能与受众"], outline: ["Scenario & Outline", "场景与大纲"], storyboard: ["Story & Shots", "故事与分镜"], review: ["Preview & Review", "成果与审阅"] };
   const activePage = () => tab === "discovery" ? "selection" : tab;
-  const effectiveTab = (key) => key === "selection" && !approved("discovery") ? "discovery" : key;
+  const effectiveTab = (key) => key === "selection" && !project.documents.discovery ? "discovery" : key;
   const directions = { before: "起始状态", actions: "操作顺序", highlight: "高亮什么", camera: "镜头从哪里到哪里", motion: "动效与来源", after: "结束状态", hold: "停留到什么条件", transition: "如何衔接下一镜", verify: "成功证据", mustKeep: "必须保留" };
   const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (s) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[s]));
   const button = (action, label, disabled = false, cls = "") => `<button type="button" data-action="${action}" class="${cls}" ${disabled ? "disabled" : ""}>${label}</button>`;
   const textField = (label, value, path, multiline = false) => `<label>${label}${multiline ? `<textarea data-path="${path}" maxlength="2000" rows="3">${esc(value)}</textarea>` : `<input data-path="${path}" maxlength="1000" value="${esc(value)}">`}</label>`;
   const approved = (key) => !!project.approvals[key];
-  function ready(key) { return keys.slice(0, keys.indexOf(key)).every(approved); }
+  function ready(key) {
+    const index = keys.indexOf(key);
+    return index <= 0 || (!!project.documents.discovery && keys.slice(1, index).every(approved));
+  }
   function prepare() {
-    draft = structuredClone(project.documents[tab] || null);
+    draft = structuredClone(project.documents[tab] || (tab === "selection" && project.documents.discovery ? { capabilityIds: [], additional: "", scope: "related", audience: "" } : null));
     dirty = false; remoteChanged = false;
   }
   async function api(route, data) {
@@ -27,6 +30,8 @@
     return result;
   }
   function status(key) {
+    if (key === "discovery" && project.documents.discovery) return "已分析";
+    if (key === "selection" && project.documents.discovery && !project.documents.selection) return "请选择";
     if (!project.documents[key]) return "待生成";
     if (!ready(key)) return "上游已变更";
     return approved(key) ? "已确认" : "待确认";
@@ -38,9 +43,11 @@
       if (!draft) return waiting("等待产品理解", "在 Codex 对话中提供产品链接或 Repo。读取授权的代码或网页后，有依据的功能清单会出现在这里。");
       return `<h2>我理解到的产品能力</h2><p class="lead">${esc(draft.summary)}</p><p class="source">依据版本：${esc(draft.sourceRevision)}</p><div class="capabilities">${draft.capabilities.map((c) => `<article><span class="badge">${esc(({ "source-verified": "源码有依据 · 未实测", "runtime-verified": "有运行验证", documented: "文档说明", "needs-confirmation": "待核验" })[c.confidence])}</span><h3>${esc(c.title)}</h3><p>${esc(c.proof)}</p><details><summary>依据与边界</summary><ul>${c.evidence.map((e) => `<li>${esc(e)}</li>`).join("")}</ul><p>${esc(c.limitations)}</p></details></article>`).join("")}</div>`;
     }
-    if (tab === "selection" && !draft) return waiting("在对话里确定功能与受众", "Codex 会根据产品理解提供功能和受众选项，你也可以补充。讨论后生成的选择会保存在这里，不需要从一张空表单开始。");
-    if (tab === "selection") return `<h2>这次想展示什么，给谁看？</h2><p class="lead">这里保存 Codex 对话里确定的选择，也可以直接修改。新增能力会先交给 Agent 核实。</p><details class="product-evidence"><summary>产品理解与证据</summary><p>${esc(project.documents.discovery.summary)}</p><p class="source">${esc(project.source)}</p>${button("discovery", "查看完整能力依据")}</details><div class="picks">${project.documents.discovery.capabilities.map((c) => `<label class="pick"><input type="checkbox" data-capability="${c.id}" ${draft.capabilityIds.includes(c.id) ? "checked" : ""}><span><b>${esc(c.title)}</b><small>${esc(c.proof)}</small></span></label>`).join("")}</div>
-      ${textField("也可以补充 AI 没找到的能力", draft.additional, "additional", true)}<label>展示范围<select data-path="scope">${[["single", "聚焦一个功能"], ["related", "几个相关功能"], ["whole", "产品整体"]].map(([id, label]) => `<option value="${id}" ${draft.scope === id ? "selected" : ""}>${label}</option>`).join("")}</select></label>${textField("观众与背景（不是产品用户画像）", draft.audience, "audience", true)}`;
+    if (tab === "selection") return `<h2>这次想展示什么？</h2><p class="lead">介绍整个产品，或者勾选一个、多个具体功能。也可以直接写下新功能，不需要先确认产品理解。</p><div class="scope-options" role="group" aria-label="展示范围">${[["whole", "整个产品", "介绍产品整体价值与主要使用流程"], ["details", "具体功能", "勾选一个或多个，也可以自己补充"]].map(([id, label, help]) => `<label class="pick"><input type="radio" name="scope-mode" data-scope-mode="${id}" ${((draft.scope === "whole") === (id === "whole")) ? "checked" : ""}><span><b>${label}</b><small>${help}</small></span></label>`).join("")}</div>
+      ${draft.scope === "whole" ? '<p class="workspace-note">已选择整个产品。下面是已发现的能力，供你参考，不必逐项勾选。</p>' : `<p class="selection-count">已选 ${draft.capabilityIds.length} 项 · 选一项就是单功能，选多项就是多功能</p>`}<div class="picks">${project.documents.discovery.capabilities.map((c) => `<label class="pick"><input type="checkbox" data-capability="${esc(c.id)}" ${draft.capabilityIds.includes(c.id) ? "checked" : ""} ${draft.scope === "whole" ? "disabled" : ""}><span><b>${esc(c.title)}</b><small>${esc(c.proof)}</small></span></label>`).join("")}</div>
+      ${textField(draft.scope === "whole" ? "希望特别介绍的内容（可选）" : "补充新功能（也可以只填这里）", draft.additional, "additional", true)}
+      ${draft.audience ? textField("观众与背景", draft.audience, "audience", true) : '<p class="workspace-note">先保存展示内容。接下来 Agent 会根据你的选择给出受众建议，不用现在填。</p>'}
+      <details class="product-evidence"><summary>查看产品理解与证据（无需单独确认）</summary><p>${esc(project.documents.discovery.summary)}</p><p class="source">${esc(project.source)}</p>${button("discovery", "查看完整能力依据")}</details>`;
     if (tab === "outline") {
       if (!draft) return waiting("还没有大纲", "功能与观众确认后，Agent 会提出合适的场景。选定的方案在这里变成简单列表，不需要截图或时长。");
       return `<h2>在哪个场景里，先做什么，再做什么。</h2><p class="lead">在左边比较 Agent 提出的不同方案。这里是当前选定的大纲，不是所有备选方案的拼接。</p>${draft.scenarios.map((scene, i) => `<section class="scenario">${textField("场景", scene.title, `scenarios.${i}.title`)}${textField("场景背景", scene.context, `scenarios.${i}.context`)}<ol>${scene.steps.map((step, j) => `<li>${textField("步骤名称", step.title, `scenarios.${i}.steps.${j}.title`)}${textField("要说明什么", step.purpose, `scenarios.${i}.steps.${j}.purpose`)}<div class="step-actions"><button data-action="step-up" data-scene="${i}" data-step="${j}" ${j === 0 ? "disabled" : ""}>上移</button><button data-action="step-down" data-scene="${i}" data-step="${j}" ${j === scene.steps.length - 1 ? "disabled" : ""}>下移</button><button data-action="step-delete" data-scene="${i}" data-step="${j}" ${scene.steps.length <= 1 ? "disabled" : ""}>删除</button></div></li>`).join("")}</ol><button data-action="step-add" data-scene="${i}">＋ 添加步骤</button>${textField("最后希望观众理解什么", scene.outcome, `scenarios.${i}.outcome`, true)}<button data-action="scenario-delete" data-scene="${i}" ${draft.scenarios.length <= 1 ? "disabled" : ""}>移除此场景</button></section>`).join("")}${button("scenario-add", "＋ 写一个自己的场景", draft.scenarios.length >= 8)}`;
@@ -57,10 +64,11 @@
   function render() {
     if (!project) return;
     const editable = ["selection", "outline", "storyboard", "review"].includes(tab) && draft && ready(tab);
+    const canApprove = tab !== "discovery" && draft && ready(tab) && (tab !== "selection" || draft.audience.trim());
     document.getElementById("app").innerHTML = `<header class="top"><button data-action="home" class="brand" aria-label="ProductShot 首页"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M11 5H5v6m16-6h6v6M5 21v6h6m16-6v6h-6" fill="none" stroke="currentColor" stroke-width="2.6"/><path d="m13 10 10 6-10 6z" fill="currentColor"/></svg>ProductShot</button><div class="project-name">${esc(project.name)}<small>本地项目 · revision ${project.revision}</small></div><span class="private"><i></i> 与 Agent 共享同一份成果</span></header>
       <main><nav aria-label="项目阶段"><button data-action="home" class="home-tab ${tab === "home" ? "active" : ""}" aria-label="Skill 首页">概览</button>${Object.entries(pages).map(([key, labels], i) => `<button data-action="tab" data-tab="${key}" class="${activePage() === key ? "active" : ""}" aria-current="${activePage() === key ? "step" : "false"}"><em>0${i + 1}</em><span>${labels[0]}<small>${labels[1]} · ${status(effectiveTab(key))}</small></span></button>`).join("")}</nav><div class="document-body"><div id="notice" role="status" class="notice ${notice || remoteChanged ? "" : "hidden"}">${esc(remoteChanged ? "Agent 已发布新版本；你的未保存编辑仍在。请先下载草稿，再重新加载合并，不能覆盖新版本。" : notice)}</div>
       <div class="document-heading"><span>${tab === "home" ? "从想法，到可拍摄的故事" : `${names[tab]} / ${status(tab)}`}</span><div>${button("refresh", "读取最新版本", busy)}${button("download", dirty ? "下载未保存草稿" : "下载项目", busy)}</div></div>${documentContent()}
-      <footer><span id="save-state">${tab === "home" ? "在 Codex 原生对话中运行 Skill" : dirty ? "有未保存编辑" : approved(tab) ? "此版本已确认" : "当前为草稿，确认后推进下一阶段"}</span><div>${editable ? button("save", "保存修改", busy, "secondary") : ""}${draft && ready(tab) ? button("approve", approved(tab) ? "再次确认此版本" : tab === "discovery" ? "理解无误，选择展示重点" : "确认此阶段", busy, "primary") : ""}</div></footer><details class="project-source"><summary>产品来源</summary><p>${esc(project.source)}</p></details></div></main><div class="shell-footer"><span>ProductShot / A story worth showing.</span><span>对话在 Agent，成果在浏览器。</span></div>`;
+      <footer><span id="save-state">${tab === "home" ? "在当前 Agent 对话中运行 Skill" : dirty ? "有未保存编辑" : approved(tab) ? "此版本已确认" : tab === "selection" && !draft?.audience ? "保存功能后，下一步选择受众" : tab === "discovery" ? "产品理解仅供参考，不需要单独确认" : "当前为草稿，确认后推进下一阶段"}</span><div>${tab === "discovery" && draft ? '<button data-action="tab" data-tab="selection" class="primary">直接选择展示内容</button>' : ""}${editable ? button("save", tab === "selection" && !draft.audience ? "保存展示内容" : "保存修改", busy, "secondary") : ""}${canApprove ? button("approve", approved(tab) ? "再次确认此版本" : "确认此阶段", busy, "primary") : ""}</div></footer><details class="project-source"><summary>产品来源</summary><p>${esc(project.source)}</p></details></div></main><div class="shell-footer"><span>ProductShot / A story worth showing.</span><span>对话在 Agent，成果在浏览器。</span></div>`;
   }
   function changed() { dirty = true; editVersion++; const state = document.getElementById("save-state"); if (state) state.textContent = "有未保存编辑，尚未修改已确认版本"; }
   function readInputs() {
@@ -70,7 +78,12 @@
       for (const part of parts.slice(0, -1)) target = target[part];
       target[parts.at(-1)] = el.value;
     });
-    if (tab === "selection" && draft) draft.capabilityIds = [...document.querySelectorAll("[data-capability]:checked")].map((el) => el.dataset.capability);
+    if (tab === "selection" && draft) {
+      draft.capabilityIds = [...document.querySelectorAll("[data-capability]:checked")].map((el) => el.dataset.capability);
+      if (draft.scope !== "whole") draft.scope = draft.capabilityIds.length === 1 && !draft.additional.trim() ? "single" : "related";
+      const count = document.querySelector(".selection-count");
+      if (count) count.textContent = `已选 ${draft.capabilityIds.length} 项 · 选一项就是单功能，选多项就是多功能`;
+    }
   }
   async function action(data) {
     if (busy) return;
@@ -82,7 +95,7 @@
         if (data.action === "approve" && tab !== "review") tab = keys[keys.indexOf(tab) + 1];
         prepare();
       }
-      notice = dirty ? "提交时的内容已保存；你随后输入的修改仍在草稿中，请再次保存。" : "已保存到项目，Agent 与网页读取的是同一份数据。";
+      notice = dirty ? "提交时的内容已保存；你随后输入的修改仍在草稿中，请再次保存。" : tab === "selection" && !draft?.audience ? "展示内容已保存到项目。在当前对话里继续，Agent 会读取选择并给出受众建议。" : "已保存到项目，Agent 与网页读取的是同一份数据。";
     } catch (error) { notice = error.message; }
     finally { busy = false; render(); }
   }
@@ -101,10 +114,11 @@
       project = next;
       if (!previous) {
         const requested = new URLSearchParams(location.search).get("stage");
-        tab = keys.includes(requested) || requested === "home" ? requested : keys.find((key) => project.documents[key] && !approved(key)) || "home";
+        tab = keys.includes(requested) || requested === "home" ? requested : keys.slice(1).find((key) => project.documents[key] && !approved(key)) || (project.documents.discovery ? "selection" : "home");
       } else {
         const update = project.events.filter((e) => e.revision > previous.revision && e.actor !== "browser" && ["publish", "approve"].includes(e.type)).at(-1);
         if (update) tab = update.type === "approve" && update.stage !== "review" ? keys[keys.indexOf(update.stage) + 1] : update.stage;
+        if (update?.stage === "discovery") tab = "selection";
       }
       prepare(); render();
     }
@@ -114,6 +128,11 @@
   });
   document.addEventListener("change", (event) => {
     if (event.target.matches("[data-path],[data-capability]")) { readInputs(); changed(); }
+    if (event.target.matches("[data-scope-mode]")) {
+      readInputs();
+      draft.scope = event.target.dataset.scopeMode === "whole" ? "whole" : draft.capabilityIds.length === 1 && !draft.additional.trim() ? "single" : "related";
+      changed(); render();
+    }
   });
   document.addEventListener("click", async (event) => {
     const el = event.target.closest("[data-action]");

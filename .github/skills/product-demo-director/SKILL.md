@@ -28,8 +28,9 @@ not the target product repository.
    Inspect the same browser page to verify the published result is visible.
 4. Read the project again before each write. User edits and feedback may have
    changed its revision. Never overwrite a stale revision.
-5. Confirm discovery, selected capabilities/audience, outline and storyboard as
-   **separate** checkpoints. Publish a document before asking to approve it.
+5. Discovery is research, not a user approval checkpoint. Immediately show
+   selectable capabilities after publishing it. Confirm the combined
+   capabilities/audience, outline and storyboard at their respective stages.
 6. On each native user turn, run `read` before answering or editing. Browser
    changes may have invalidated approvals; use the newest document, not a stale
    copy from chat. Never require the user to copy a JSON file between panes.
@@ -41,7 +42,7 @@ not the target product repository.
 
 **The left side is Codex's own conversation. The right side is Codex's in-app
 browser showing the project. They are not two panels inside our website.**
-Use the current host Agent and its native question/choice tools for all
+Use the current host Agent and its native question/choice tools for
 conversation. Do not build or open a second chatbot, feedback inbox, embedded
 Codex clone, model API service, or transcript mirror in the generated webpage.
 No additional model integration is needed: the host Agent is already executing
@@ -49,11 +50,17 @@ this Skill. Do not use the legacy `message`/`answer` commands for this workflow.
 
 The browser has a Skill overview and four result tabs: **Features & Audience**, **Scenario &
 Outline**, **Story & Shots**, **Preview & Review**. Discovery remains a separate
-approval checkpoint inside the first tab, not an extra top-level page.
+evidence section inside the first tab, not an approval gate.
 
-After understanding the product, offer one feature, several features, or the
-whole product, and accept custom features. Then suggest target audiences based
-on the chosen capabilities and accept free text. An option answer is not stage
+After understanding the product, open the first result tab with whole-product
+selection, capability checkboxes (one or many), and a custom-feature field.
+Do not ask "is my understanding correct?" before these choices. The native
+question tool may not support multi-select: use the actual webpage checkboxes,
+not a long single-select menu or instructions to type numeric combinations.
+Accept native chat answers too and persist them into the same selection draft.
+An empty audience is allowed while selecting features; do not invent one or
+block saving features. After the user saves, read their choices and suggest
+target audiences. Accept free text. An option answer is not stage
 approval: publish the combined selection and ask for confirmation separately.
 Offer 2–3 scenario alternatives in native chat, each with a different ordered
 outline, and accept custom input. Publish only the chosen draft outline.

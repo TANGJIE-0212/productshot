@@ -59,8 +59,10 @@ the Agent. Do not reload the page to force synchronization.
 1. Introduce the Skill in chat; obtain only a missing URL/repo.
 2. Initialize or resume the same private project; open its viewer.
 3. Inspect real product evidence and publish discovery.
-4. Use native questions for capabilities, scope and then audience. Accept
-   free-text additions. Publish selection once those answers are available.
+4. Immediately show whole-product selection, feature checkboxes and custom
+   input in the browser. Do not add a discovery approval question. Native
+   answers are also accepted. Save feature selection with `audience: ""` first,
+   then suggest audiences based on the saved features.
 5. Confirm the published document in native chat (or read its browser approval).
    Record explicit native approval with `approve`.
 6. Propose several scenarios and ordered outlines in chat. Publish the chosen
@@ -101,7 +103,7 @@ node $tool read --project $project
 Approval is a separate explicit operation. Only after the user approved:
 
 ```powershell
-node $tool approve --project $project --revision 1 --stage discovery --note 'User confirmed this understanding in the current conversation.'
+node $tool approve --project $project --revision 3 --stage selection --note 'User confirmed these features and audience.'
 ```
 
 The UI also offers explicit approval buttons. Its approval has the same effect.
@@ -137,7 +139,7 @@ pass or independent runtime verification.
 
 ### 2. `selection`
 
-Only after discovery is approved:
+After discovery is published; no discovery approval is required:
 
 ```json
 {
@@ -152,6 +154,14 @@ Scope: `single`, `related`, `whole`. Users may select one/many, add free text,
 and describe the audience. Additional capabilities remain unverified until
 researched. Do not reject an incomplete starting idea merely for being vague;
 help make it specific before final confirmation.
+
+The browser infers `single`/`related` from checked capabilities and custom text;
+`whole` is an explicit whole-product choice and does not require checking all
+capabilities. `audience` can be empty in a draft so selecting features never
+depends on answering the later audience question. Approving `selection`
+requires a nonempty audience; outline publication still requires selection
+approval. Discovery changes invalidate later approvals, but discovery itself
+has no user approval gate.
 
 ### 3. `outline`
 

@@ -28,6 +28,12 @@ the same versioned project, with explicit approvals, stale-write rejection and r
 Changing an approved document invalidates affected approvals without deleting
 downstream drafts.
 
+After product inspection, choose the whole product or check one/many features
+directly in the browser; a free-text field accepts undiscovered features too.
+There is no separate "confirm product understanding" gate. Save features first,
+then discuss audience suggestions with the Agent. The combined features and
+audience must be confirmed before generating an outline.
+
 ### What is not connected yet
 
 - Codex is the conversation host, not a model service embedded in our website.
