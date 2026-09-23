@@ -1,4 +1,5 @@
-import { App } from "@modelcontextprotocol/ext-apps";
+import { App, applyDocumentTheme, applyHostStyleVariables } from "@modelcontextprotocol/ext-apps";
+import { toolData } from "./tool-data.js";
 
 const app = new App({ name: "ProductShot feature picker", version: "0.1.0" });
 const element = (id) => document.getElementById(id);
@@ -22,15 +23,6 @@ function controls() {
   element("retry").hidden = !pendingMessage;
   element("retry").disabled = busy;
   element("count").textContent = `已选 ${selected.size} 项 · 可多选`;
-}
-
-function toolData(result) {
-  if (result.isError) throw new Error(result.content?.filter((item) => item.type === "text").map((item) => item.text).join("\n") || "工具执行失败");
-  const data = result.structuredContent;
-  if (!data || typeof data.projectId !== "string" || !Number.isInteger(data.revision) || !Array.isArray(data.capabilities) || !Array.isArray(data.recommendedIds)) {
-    throw new Error("MCP 返回了无效的功能选择数据，请让 Agent 重新打开选择卡片。");
-  }
-  return data;
 }
 
 function render(data) {
@@ -98,7 +90,7 @@ async function deliverMessage() {
     const result = await app.sendMessage({ role: "user", content: [{ type: "text", text: pendingMessage }] });
     if (result.isError) throw new Error("宿主拒绝了继续对话的请求");
     pendingMessage = undefined;
-    status("选择已保存，继续请求已交给宿主。Agent 是否立即回复由宿主决定。");
+    status("选择已保存，继续请求已交给宿主。如果消息出现在聊天输入框，请按发送继续；宿主不一定自动发送。");
   } catch (error) {
     status(`选择已保存，但未能通知 Agent：${errorText(error)}。可以重试通知，不会重复保存。`, true);
   }
@@ -178,9 +170,15 @@ app.ontoolresult = (result) => {
 };
 app.ontoolcancelled = () => { status("Agent 已取消本次工具调用；没有自动保存或确认。", true); };
 app.onerror = (error) => status(`MCP App 通信错误：${errorText(error)}`, true);
+function applyTheme(context) {
+  if (context?.theme) applyDocumentTheme(context.theme);
+  if (context?.styles?.variables) applyHostStyleVariables(context.styles.variables);
+}
+app.onhostcontextchanged = applyTheme;
 try {
   await app.connect(undefined, { timeout: 15000 });
   connected = true;
+  applyTheme(app.getHostContext());
   if (!app.getHostCapabilities()?.serverTools) status("宿主未提供 App 工具调用能力，无法在此保存。请在对话中完成选择。", true);
   controls();
 } catch (error) {

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ProductShot · 展示功能</title>
   <style>
-    :root { color-scheme: light dark; font-family: var(--font-sans, system-ui, sans-serif); color: var(--color-text-primary, #20242c); background: var(--color-background-primary, #fafaf8); }
+    :root { color-scheme: light dark; font-family: var(--font-sans, system-ui, sans-serif); color: var(--color-text-primary, var(--vscode-editor-foreground, #20242c)); background: var(--color-background-primary, var(--vscode-editor-background, #fafaf8)); }
     * { box-sizing: border-box; }
     body { margin: 0; padding: 20px; }
     main { max-width: 760px; margin: auto; }
@@ -35,6 +35,8 @@
     #status[data-error=true] { color: var(--color-text-danger, #a82424); }
     [hidden] { display: none !important; }
     @media (prefers-color-scheme: dark) { :root { color: var(--color-text-primary, #ededed); background: var(--color-background-primary, #202124); } #project, #count, .hint, small, .brand { color: var(--color-text-secondary, #bcbcbc); } .badge { color: #77c9a3; } }
+    :root[data-theme=dark] { color: var(--color-text-primary, #ededed); background: var(--color-background-primary, #202124); }
+    :root[data-theme=light] { color: var(--color-text-primary, #20242c); background: var(--color-background-primary, #fafaf8); }
     @media (max-width: 400px) { body { padding: 12px; } footer button { width: 100%; } }
   </style>
 </head>

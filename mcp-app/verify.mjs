@@ -8,6 +8,7 @@ import { build } from "esbuild";
 import puppeteer from "puppeteer";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { toolData } from "./tool-data.js";
 
 const root = fileURLToPath(new URL("./", import.meta.url));
 const director = path.resolve(root, "..", ".github", "skills", "product-demo-director", "scripts", "director.mjs");
@@ -56,6 +57,12 @@ try {
   assert.ok((await call("productshot_select_features")).isError, "Must inspect product first");
   data(await call("productshot_publish_discovery", { revision: 0, discovery }));
   const picker = data(await call("productshot_select_features", { recommendedIds: ["tables", "forms"] }));
+  const serializedPicker = await call("productshot_select_features", { recommendedIds: ["tables", "forms"] });
+  assert.deepEqual(toolData({ content: serializedPicker.content }), picker);
+  assert.throws(() => toolData({ content: [{ type: "text", text: "not JSON" }] }), /没有传递/);
+  assert.throws(() => toolData({ structuredContent: {}, content: serializedPicker.content }), /无效/);
+  assert.throws(() => toolData({ content: [{ type: "text", text: JSON.stringify({ ...picker, recommendedIds: ["missing"] }) }] }), /无效/);
+  assert.throws(() => toolData({ isError: true, content: serializedPicker.content }));
   assert.equal(picker.revision, 1);
   assert.equal(picker.selection, null);
   assert.equal(picker.appsSupported, true);
@@ -91,7 +98,7 @@ try {
           bridge.oncalltool = (params) => window.mcpCall(params);
           bridge.onmessage = (params) => window.hostMessage(params);
           bridge.oninitialized = async () => {
-            await bridge.sendToolInput({arguments:{recommendedIds:initial.structuredContent.recommendedIds}});
+            await bridge.sendToolInput({arguments:{recommendedIds:options.recommendedIds}});
             await bridge.sendToolResult(initial);
           };
           await bridge.connect(new PostMessageTransport(frame.contentWindow, frame.contentWindow));
@@ -110,15 +117,18 @@ try {
     const page = await browser.newPage();
     await page.setViewport({ width: 800, height: 1000 });
     await page.setContent('<!doctype html><title>SDK regression host only</title><iframe title="Feature picker" sandbox="allow-scripts" style="width:100%;height:900px;border:0"></iframe>');
-    await page.exposeFunction("mcpCall", (params) => failSave
-      ? { isError: true, content: [{ type: "text", text: "Test save failure" }] }
-      : client.callTool(params));
+    await page.exposeFunction("mcpCall", async (params) => {
+      if (failSave) return { isError: true, content: [{ type: "text", text: "Test save failure" }] };
+      const result = await client.callTool(params);
+      return options.contentOnly ? { content: result.content, isError: result.isError } : result;
+    });
     await page.exposeFunction("hostMessage", (params) => {
       messages.push(params);
       return rejectMessage ? { isError: true } : {};
     });
     await page.addScriptTag({ content: bridgeBuild.outputFiles[0].text });
-    await page.evaluate((html, initial, options) => window.mountApp(html, initial, options), html, initial, options);
+    const delivered = options.contentOnly ? { content: initial.content, isError: initial.isError } : initial;
+    await page.evaluate((html, initial, options) => window.mountApp(html, initial, options), html, delivered, { ...options, recommendedIds: initial.structuredContent.recommendedIds });
     const frame = await (await page.$("iframe")).contentFrame();
     await frame.waitForSelector('[data-capability="tables"]');
     await frame.waitForFunction(() => !document.querySelector("#confirm").disabled);
@@ -179,12 +189,18 @@ try {
 
   const restored = data(await call("productshot_select_features", { recommendedIds: ["tables", "charts"] }));
   assert.deepEqual(restored.selection.capabilityIds, [], "Custom-only selection must not be replaced by defaults");
+  const contentOnly = await openApp(await call("productshot_select_features"), { messages: true, contentOnly: true });
+  assert.equal(await contentOnly.frame.$eval("#additional", (el) => el.value), "Only custom");
+  await contentOnly.frame.click('[data-capability="tables"]');
+  await contentOnly.frame.click("#confirm");
+  await contentOnly.frame.waitForFunction(() => document.querySelector("#status").textContent.includes("继续请求已交给宿主"));
+  assert.deepEqual(cli("read").documents.selection.capabilityIds, ["tables"]);
   const unsupported = await openApp(await call("productshot_select_features"), { messages: false });
   const messageCount = messages.length;
   await unsupported.frame.click("#confirm");
   await unsupported.frame.waitForFunction(() => document.querySelector("#status").textContent.includes("未声明支持"));
   assert.equal(messages.length, messageCount);
-  assert.equal(cli("read").revision, savedRevision + 1);
+  assert.equal(cli("read").revision, savedRevision + 2);
   await unsupported.page.setViewport({ width: 320, height: 850 });
   assert.ok(await unsupported.frame.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
   saved = cli("read");

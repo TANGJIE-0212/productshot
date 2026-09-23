@@ -60,7 +60,10 @@ function domainErrors(handler) {
 }
 
 function result(value, text = JSON.stringify(value)) {
-  return { content: [{ type: "text", text }], structuredContent: value };
+  const serialized = JSON.stringify(value);
+  const content = [{ type: "text", text }];
+  if (text !== serialized) content.push({ type: "text", text: serialized });
+  return { content, structuredContent: value };
 }
 
 function checkIds(chosen, capabilities) {

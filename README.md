@@ -196,6 +196,11 @@ reports rejection or transport failure separately from a successful save.
 Notification retry does not repeat the save. If messaging is unavailable, the
 App explicitly asks the user to continue in chat. A successful message request
 means the host accepted it, not proof that an Agent generated a reply.
+In the inspected VS Code 1.135 Agent Host path, `ui/message` fills the chat
+composer rather than sending it: the user must press Send. That path also forwards
+tool-result content without `structuredContent`, so the App accepts the same
+validated view model from a JSON text block. Invalid/missing data remains an error;
+the App never fabricates feature defaults to mask a transport failure.
 
 Without Apps support, the tools return the capability list for explicit native
 chat selection. The server never silently treats recommended defaults as consent.
