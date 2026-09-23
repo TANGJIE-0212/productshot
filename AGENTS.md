@@ -1,5 +1,13 @@
 # ProductShot
 
+## Agreed direction
+
+Read [the interaction design](docs/productshot-interaction-design.md) for the
+2026-09-23 decisions and implementation gaps before extending the workflow.
+It specifies native MCP Elicitation for intake decisions and a web workspace
+for visual editing. The browser sequence below describes the legacy runner,
+not the target intake UX. Do not claim the design is already fully implemented.
+
 ## Product boundary
 
 The host Agent (for example Codex) owns the native conversation and runs the

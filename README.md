@@ -4,6 +4,14 @@ An Agent-led workspace for planning product demo videos. Give your Agent a
 product URL or repository, discuss what to demonstrate, and refine the story
 and shots in a shared local project.
 
+## Agreed interaction direction
+
+See [the interaction design](docs/productshot-interaction-design.md) (2026-09-23):
+native MCP forms for product intake, features/audience and scenario decisions;
+a shared web workspace for shot editing and preview. The document distinguishes
+the agreed target from implemented behavior and pending host validation.
+The existing browser workflow below remains available during this transition.
+
 ## Current version: Product Demo Director
 
 The portable [Skill](.github/skills/product-demo-director/SKILL.md) runs inside
@@ -118,6 +126,119 @@ Agent that local folder. Start a new `serve` process and use its newly printed
 URL, not the old computer's access token. Tell the Agent if the product repo or
 artifact paths changed; old evidence is not automatically reverified. Without
 the private folder, provide a product URL/repo to start a new project.
+
+## Experimental MCP: native feature selection
+
+The `mcp-app` package is an optional, local stdio MCP server using native MCP
+Elicitation for feature selection, with an optional legacy MCP App viewer.
+It is separate from the existing browser workflow and does not change
+existing projects unless the user explicitly confirms feature picks.
+
+The Agent researches the supplied product, publishes evidence-backed discovery,
+and requests a native multi-select form in a compatible host. The form supports
+recommended defaults and custom text. The tool waits for the form response,
+saves only accepted choices, then returns the result to the Agent's existing
+tool call. No `ui/message`, second chat message, or App wake-up is needed.
+It does not ask
+"whole product or specific features" first. Existing saved choices take priority
+over recommendations, including custom-only choices.
+
+The tools are:
+
+- `productshot_read_project`: read the bound private project.
+- `productshot_publish_discovery`: publish the Agent's analysis at a checked revision.
+- `productshot_select_features`: request native form input with `recommendedIds`,
+  wait for confirmation, validate and save accepted picks, and return the result.
+- `productshot_save_features`: save explicit choices without approving a stage.
+- `productshot_open_feature_app`: optional read-only legacy App viewer.
+
+The server provides workflow instructions; a Skill is not required for this
+experimental entry point. It does not inspect the product or call a model itself.
+It is bound to one project supplied at startup, not an arbitrary tool-provided
+filesystem path. The other director stages still use the existing runner/viewer.
+
+### Setup
+
+Requires Node.js 22.12+ for this package and its browser checks:
+
+```powershell
+Set-Location mcp-app
+npm ci
+npm run build
+npm test
+Set-Location ..
+node .github\skills\product-demo-director\scripts\director.mjs init --project .director-projects\mcp-demo --name 'My demo' --source 'https://example.com'
+```
+
+Dependencies are isolated from the earlier Next.js/Remotion prototype. The App
+uses the compatible MCP SDK 1.x / MCP Apps SDK 1.x pair, pinned in its lockfile.
+No API key, external scripts, hosted backend or illustration service is needed.
+Do not initialize over an existing project; use its path directly to resume.
+
+Configure a local stdio server in your host, using absolute paths:
+
+```json
+{
+  "mcpServers": {
+    "productshot": {
+      "command": "node",
+      "args": [
+        "C:\\path\\to\\productshot\\mcp-app\\server.mjs",
+        "--project",
+        "C:\\path\\to\\productshot\\.director-projects\\mcp-demo"
+      ]
+    }
+  }
+}
+```
+
+This shows the common `mcpServers` format; VS Code's `.vscode/mcp.json` uses
+`servers` instead. Use host-appropriate absolute paths on macOS/Linux. Trust and
+enable the server in the host, then refresh tools or start a new session as
+required. Ask the Agent to use ProductShot to inspect the project's source,
+publish discovery and open `productshot_select_features` with recommended IDs.
+
+### Host compatibility and confirmation
+
+Ordinary MCP support does **not** imply Elicitation support. The client must
+advertise `elicitation.form` (legacy `elicitation: {}` also means form support).
+URL-only or unsupported clients get an explicit native-chat fallback, not an
+invented form or automatic acceptance of defaults. Multi-select uses the standard
+array enum schema; rendering and default display depend on the host version.
+Cancel/decline, invalid input, timeout, transport failure and stale revisions
+never silently save choices. An accepted response returns to the pending tool;
+actual Agent continuation still requires a functioning host tool loop.
+
+The optional legacy App additionally requires
+the `io.modelcontextprotocol/ui` extension and `text/html;profile=mcp-app`.
+Layout and placement belong to the host, not ProductShot.
+
+On confirmation, the App first saves through `tools/call`, then requests a user
+message through `ui/message`. It checks the host's text-message capability and
+reports rejection or transport failure separately from a successful save.
+Notification retry does not repeat the save. If messaging is unavailable, the
+App explicitly asks the user to continue in chat. A successful message request
+means the host accepted it, not proof that an Agent generated a reply.
+The inspected VS Code 1.135 Agent Host does not advertise the App `message`
+capability, so this App does not send that request. Its dormant `ui/message`
+handler would only fill the composer, not send a turn. This is why the default
+intake now uses Elicitation instead. That host path also forwards
+tool-result content without `structuredContent`, so the App accepts the same
+validated view model from a JSON text block. Invalid/missing data remains an error;
+the App never fabricates feature defaults to mask a transport failure.
+
+The server never silently treats recommended defaults as consent.
+Feature confirmation does not approve audience/storyboard or authorize product
+writes, recording, paid generation or publishing.
+
+`npm test` in `mcp-app` tests real stdio MCP native forms (pending tool, acceptance,
+decline/cancel, malformed responses, conflicts, legacy and unsupported clients)
+and a browser running the official SDK AppBridge in an isolated **test host**.
+It also covers defaults, custom selections,
+stale writes, safe text rendering, persistence, message delivery/rejection/retry,
+unsupported messaging, and narrow layouts. It does **not** establish compatibility
+or automatic Agent continuation in VS Code, Claude or any other production host.
+Those require a separate live-host acceptance check.
 
 ## Earlier video prototype
 

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ProductShot · 展示功能</title>
+  <style>
+    :root { color-scheme: light dark; font-family: var(--font-sans, system-ui, sans-serif); color: var(--color-text-primary, var(--vscode-editor-foreground, #20242c)); background: var(--color-background-primary, var(--vscode-editor-background, #fafaf8)); }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 20px; }
+    main { max-width: 760px; margin: auto; }
+    header { border-bottom: 1px solid #8885; padding-bottom: 14px; }
+    .brand { font-size: 12px; letter-spacing: .12em; color: var(--color-text-secondary, #666); }
+    h1 { font-size: 24px; margin: 8px 0; }
+    p { line-height: 1.6; }
+    #project, #count, .hint, small { color: var(--color-text-secondary, #666); font-size: 13px; }
+    fieldset { margin: 0; padding: 0; border: 0; min-width: 0; }
+    #choices { display: grid; gap: 10px; margin: 14px 0; }
+    .choice { border: 1px solid #8885; border-radius: 12px; padding: 14px; }
+    .choice:has(input:checked) { border-color: #44866b; background: #44866b12; }
+    .choice label { display: flex; gap: 12px; align-items: start; cursor: pointer; }
+    input[type=checkbox] { margin: 4px 0 0; width: 18px; height: 18px; accent-color: #287553; flex: none; }
+    .choice strong { font-size: 15px; }
+    .choice p { font-size: 13px; margin: 6px 0 0; }
+    .badge { margin-left: 8px; color: #287553; font-size: 12px; }
+    details { margin: 8px 0 0 30px; font-size: 12px; overflow-wrap: anywhere; }
+    summary { cursor: pointer; }
+    #additional { display: block; width: 100%; min-height: 84px; margin-top: 8px; padding: 10px; resize: vertical; border: 1px solid #8888; border-radius: 8px; font: inherit; color: inherit; background: transparent; }
+    footer { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+    button { padding: 10px 16px; border: 1px solid #8888; border-radius: 8px; font: inherit; cursor: pointer; color: inherit; background: transparent; }
+    button.primary { background: #216547; border-color: #216547; color: white; }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    :focus-visible { outline: 3px solid #498acc; outline-offset: 3px; }
+    #status { font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+    #status[data-error=true] { color: var(--color-text-danger, #a82424); }
+    [hidden] { display: none !important; }
+    @media (prefers-color-scheme: dark) { :root { color: var(--color-text-primary, #ededed); background: var(--color-background-primary, #202124); } #project, #count, .hint, small, .brand { color: var(--color-text-secondary, #bcbcbc); } .badge { color: #77c9a3; } }
+    :root[data-theme=dark] { color: var(--color-text-primary, #ededed); background: var(--color-background-primary, #202124); }
+    :root[data-theme=light] { color: var(--color-text-primary, #20242c); background: var(--color-background-primary, #fafaf8); }
+    @media (max-width: 400px) { body { padding: 12px; } footer button { width: 100%; } }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <span class="brand">PRODUCTSHOT / MCP APP</span>
+      <h1>这次想展示哪些功能？</h1>
+      <div id="project">正在连接 Agent 宿主…</div>
+    </header>
+    <p>可以直接使用推荐组合，也可以多选、取消或补充。确认后将保存选择，并请求 Agent 继续讨论受众。</p>
+    <section aria-label="功能选择">
+      <fieldset id="fields" disabled>
+        <legend id="count">等待产品分析结果</legend>
+        <div id="choices"></div>
+        <label for="additional">补充想展示的功能</label>
+        <textarea id="additional" maxlength="2000" placeholder="可以只填写这里；新增能力需要进一步核实。"></textarea>
+      </fieldset>
+      <footer>
+        <button id="confirm" class="primary" type="button" disabled>确认并继续</button>
+        <button id="reload" type="button" disabled>读取最新选择</button>
+        <button id="retry" type="button" hidden>重试通知 Agent</button>
+      </footer>
+    </section>
+    <p id="status" role="status" aria-live="polite">等待 MCP App 连接；独立打开此文件无法连接 Agent。</p>
+    <p class="hint">选择功能不等于批准整个阶段，更不授权录屏、修改产品或发布。</p>
+  </main>
+  <!-- APP_SCRIPT -->
+</body>
+</html>
