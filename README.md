@@ -1,6 +1,6 @@
-# ProductShot
+# DemoShot
 
-ProductShot is an Agent-led workflow for understanding a product, selecting what
+DemoShot is an Agent-led workflow for understanding a product, selecting what
 to demonstrate, designing a story, and producing an executable recording script.
 
 ## What this repository contains
@@ -20,14 +20,14 @@ to demonstrate, designing a story, and producing an executable recording script.
     native MCP Elicitation where the host supports it.
 - **UI and visual research**
   - [`public/director-ui/`](public/director-ui/) contains the active light and dark
-    ProductShot UI prototypes.
+    DemoShot UI prototypes.
   - [`public/studio-designs.html`](public/studio-designs.html) and the related
     `studio-*` files preserve the visual design study.
   - [`docs/productshot-interaction-design.md`](docs/productshot-interaction-design.md)
     records the agreed interaction direction and remaining implementation gaps.
 
 The earlier Next.js and Remotion video-generator prototype has been removed.
-It was a separate experiment and is not part of the current ProductShot
+It was a separate experiment and is not part of the current DemoShot
 architecture.
 
 ## Skill layout

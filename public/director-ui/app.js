@@ -387,7 +387,7 @@
       <div class="file-chips">${state.files.map((f, i) => `<button type="button" data-action="remove-file" data-index="${i}" aria-label="移除 ${escape(f.name)}">${escape(f.name)} ×</button>`).join("")}</div>
       <div class="goal-input">${goalField()}</div><div class="source-actions"><label class="attach">${svg("paper")} 添加资料<input id="files" type="file" multiple aria-label="添加资料"></label><button type="submit" class="primary" name="production-mode" value="step">分步骤成片 ${svg("arrow")}</button></div></form>
       <p class="home-meta">UI 原型。附件仅保存名称和大小，不读取内容。</p></div>
-      <div class="studio-art"><div class="studio-art-top"><span>PRODUCTSHOT</span><span>DESIGN STUDY / 02</span></div><img src="/studio-poster.svg" alt="原创胶片环装饰插画，非产品界面或生成成果" width="720" height="860"><div class="studio-art-bottom"><span>资料 → 场景 → 分镜 → 视频</span><span>↗</span></div></div>
+      <div class="studio-art"><div class="studio-art-top"><span>DEMOSHOT</span><span>DESIGN STUDY / 02</span></div><img src="/studio-poster.svg" alt="原创胶片环装饰插画，非产品界面或生成成果" width="720" height="860"><div class="studio-art-bottom"><span>资料 → 场景 → 分镜 → 视频</span><span>↗</span></div></div>
       </section><section class="studio-directory" aria-label="工作台页面"><div><span class="directory-label">WORKSPACE INDEX</span><h2>工作流程</h2></div>${mainPages.slice(1).map((page, i) => `<button data-action="page" data-index="${page}"><span class="directory-number">0${i + 2}</span><strong>${pages[page]}</strong><span class="directory-arrow">↗</span></button>`).join("")}</section>`;
   }
   function home() {
@@ -528,14 +528,14 @@
     // Preserve the live canvas and its handlers while rebuilding the page shell.
     const spatialStage = variant === "spatial" ? document.querySelector(".spatial-stage") : null;
     spatialStage?.remove();
-    document.title = `${pages[state.page]} · ProductShot`;
+    document.title = `${pages[state.page]} · DemoShot`;
     document.documentElement.dataset.page = String(state.page);
     const content = state.page === 0 ? (studio ? studioHome() : home()) : !state.sample ? pending() : [null, featurePage, storyPage, scriptPage, reviewPage][state.page]();
-    document.getElementById("app").innerHTML = `<header class="topbar"><div style="display:flex;align-items:center;gap:18px"><button class="brand" data-action="home" aria-label="ProductShot 首页">${brandIcon}ProductShot</button><span class="prototype-label">产品视频工作台</span></div><div class="top-right"><span class="small muted">${state.sample ? "示例预览" : "UI PREVIEW"}</span><button class="agent-button" data-action="connect"><span class="agent-dot"></span>连接 Agent ↗</button></div></header>
+    document.getElementById("app").innerHTML = `<header class="topbar"><div style="display:flex;align-items:center;gap:18px"><button class="brand" data-action="home" aria-label="DemoShot 首页">${brandIcon}DemoShot</button><span class="prototype-label">产品视频工作台</span></div><div class="top-right"><span class="small muted">${state.sample ? "示例预览" : "UI PREVIEW"}</span><button class="agent-button" data-action="connect"><span class="agent-dot"></span>连接 Agent ↗</button></div></header>
       <nav class="steps" aria-label="制作流程">${mainPages.map((page, i) => { const active = state.page === page || (state.page === 2 && page === 1); return `${i ? '<span class="step-line"></span>' : ""}<button data-action="page" data-index="${page}" class="step ${active ? "active" : state.page > page ? "past" : ""}" ${active ? 'aria-current="step"' : ""}><span class="number">${i + 1}</span>${pages[page]}</button>`; }).join("")}</nav>
       ${loadError ? `<div class="error-banner" role="alert">${escape(loadError)} ${button("下载原草稿", "export-raw", "secondary")} ${button("重置损坏草稿", "reset-storage", "secondary")}</div>` : ""}
       ${saveError ? `<div class="error-banner" role="alert">${escape(saveError)} ${button("下载草稿", "export", "secondary")}</div>` : ""}
-      <main>${content}${state.page ? `<div class="page-foot">${navigation()}</div>` : ""}</main><footer class="global-foot"><span>ProductShot · UI 原型</span><span>Agent 未连接 · 草稿保存在本地</span></footer>`;
+      <main>${content}${state.page ? `<div class="page-foot">${navigation()}</div>` : ""}</main><footer class="global-foot"><span>DemoShot · UI 原型</span><span>Agent 未连接 · 草稿保存在本地</span></footer>`;
     if (spatialStage) (state.page === 0 ? document.querySelector(".home") : document.body).append(spatialStage);
     document.querySelectorAll("img").forEach(img => img.addEventListener("error", () => {
       const replacement = document.createElement("div"); replacement.className = "media-empty"; replacement.textContent = "参考图片不可用"; img.replaceWith(replacement);
