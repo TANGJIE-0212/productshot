@@ -6,10 +6,8 @@
   const STORAGE = ({ studio: "productshot-studio-ui-v1", neo: "productshot-neo-ui-v1", glass: "productshot-glass-ui-v1", spatial: "productshot-spatial-ui-v1" })[variant] || "productshot-five-page-ui-v1";
   const pages = ["产品与目标", "功能选择", "场景故事", "分镜脚本", "效果与修改"];
   const mainPages = [0, 1, 3, 4];
-  const intakeExamples = {
-    repo: { label: "Biz Table · Repo / LT 汇报", source: "https://github.com/gim-home/biz-table/", goal: "向 LT 汇报 Biz Table 项目，时长约 1 分钟。" },
-    website: { label: "网页 · 黑客松展示", source: "https://excalidraw.com/", goal: "在黑客松中展示这个网页项目，面向黑客松评委，时长在 2 分钟以内。" }
-  };
+  const DEFAULT_SOURCE = "https://github.com/gim-home/biz-table/";
+  const DEFAULT_GOAL = "向 LT 汇报 Biz Table 项目，时长约 1 分钟。";
   const icons = {
     spark: '<path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5Z"/>',
     link: '<path d="m10 13 4-4m-7 6-2 2a4 4 0 0 0 6 5l4-4a4 4 0 0 0 0-6M9 13a4 4 0 0 1 0-6l4-4a4 4 0 0 1 6 6l-2 2" transform="translate(0 -1)"/>',
@@ -115,7 +113,7 @@
     { id: "form", title: "新需求来了，生成连接已有业务的表单", purpose: "展示对话如何给现有应用增加新的收集入口。", image: "form.png", time: 38.7, narration: "有新的收集需求，再让 Agent 生成一张订单表单，连接已有业务，分享出去就能填写。从一句话搭建，到看数据、改视图、加入口，这个系统可以跟着你的业务继续生长。", before: "当前订单表存在，本幕表单不存在。", action: "发送表单创建要求；打开新表单与实际入口；仅在授权测试窗口填写一次并按真实策略核对结果。", after: "新的收集入口连接现有销售订单；权限和审核状态按真实环境展示。", highlight: "强调新表单与原订单表的联系，不展示真实个人资料。", camera: "左侧保留生成要求，右侧完整展示表单，再短暂聚焦获准入口；收尾回到完整应用。", verify: "字段绑定、访问范围与实际打开状态均需核验；不得对外发送。", transition: "结束，不追加普通新增计数作为高潮。" },
     { id: "conclusion", title: "回到持续生长的业务应用", purpose: "用一个短收束回顾完整能力链，不增加新的产品主张。", image: "readback.png", time: 49.5, narration: "从业务描述到关联结构，再到数据视图、持续修改和新的收集入口，Biz Table 让同一个业务应用随着需求继续生长。", before: "前五幕的真实结果均已核验。", action: "回到应用全景，依次保留表、看板和表单入口作为已完成结果，不重复操作。", after: "完整业务应用可辨认，影片在真实结果上结束。", highlight: "无；避免多个区域同时闪烁。", camera: "稳定全景短停，旁白结束即收片，不用冻结补时。", verify: "只有前五幕均有真实画面时才使用此收束。", transition: "结束。" }
   ];
-  const defaults = () => ({ version: 1, mode: "oneclick", automatic: "idle", scriptView: "recording", narrationDrafts: [], page: 0, source: "", videoGoal: "", presentation: "features", extraFeatures: [], featureShotDrafts: [], audienceAdditional: "", files: [], sample: false, selected: recommendedFeatures(), custom: "", audience: "LT REVIEW", scenario: "retail", storyTitle: scenarios[0].title, storyContext: scenarios[0].text, storyUser: personaDefaults()[2].user, storyPain: personaDefaults()[2].pain, storyOutcome: scenarios[0].outcome, sceneData: sceneDefaults(), steps: scenarioSteps(scenarios[0]), shots: structuredClone(shotTemplates), shot: 0, clip: 0, feedbackTarget: `片段 01 · ${shotTemplates[0].title}`, feedbackText: "", feedback: [], stale: true, savedAt: "" });
+  const defaults = () => ({ version: 1, mode: "oneclick", automatic: "idle", scriptView: "recording", narrationDrafts: [], page: 0, source: DEFAULT_SOURCE, videoGoal: DEFAULT_GOAL, presentation: "features", extraFeatures: [], featureShotDrafts: [], audienceAdditional: "", files: [], sample: false, selected: recommendedFeatures(), custom: "", audience: "LT REVIEW", scenario: "retail", storyTitle: scenarios[0].title, storyContext: scenarios[0].text, storyUser: personaDefaults()[2].user, storyPain: personaDefaults()[2].pain, storyOutcome: scenarios[0].outcome, sceneData: sceneDefaults(), steps: scenarioSteps(scenarios[0]), shots: structuredClone(shotTemplates), shot: 0, clip: 0, feedbackTarget: `片段 01 · ${shotTemplates[0].title}`, feedbackText: "", feedback: [], stale: true, savedAt: "" });
   const validSteps = steps => Array.isArray(steps) && steps.length > 0 && steps.length <= 20 && steps.every(x => x && typeof x.id === "string" && typeof x.title === "string");
   const validDraft = d => d && ["id", "title", "context", "user", "pain", "outcome"].every(k => typeof d[k] === "string") && validSteps(d.steps);
   function validSceneData(s) {
@@ -318,56 +316,6 @@
   }
   function pauseAutomatic() {
     clearAutomaticTimer();
-    if (["running", "checking"].includes(state.automatic)) {
-      state.automatic = "paused";
-      save();
-      const panel = document.getElementById("production-controls");
-      if (panel) panel.innerHTML = productionControls();
-    }
-  }
-  function automaticBlock() {
-    if (!state.sample) return "当前产品尚未连接 Agent，不能自动分析、编写或录制。";
-    if (state.presentation !== "features") return "场景需单独验证与录制，请分步骤编辑；已有视频不是此场景的成片。";
-    if (!selectedFeatures().length || selectedFeatures().some(f => !recommendedFeatures().includes(f.id))) return "当前选择包含本次新版脚本之外的功能，或没有可展示功能。请分步骤核验，不能自动补出成功结果。";
-    if (!mediaChecked) return "正在检查本地示例素材是否可用；这不是产品分析或录制。";
-    if (!mediaAvailable) return "示例素材不可用，自动演示已停止。连接真实素材后刷新并手动继续。";
-    if (loadError || saveError) return "草稿无法安全保存，自动演示已停止。请先处理保存问题。";
-    return "";
-  }
-  function startAutomatic() {
-    clearAutomaticTimer();
-    if (!mediaChecked && state.sample && [1, 3].includes(state.page) && !loadError && !saveError) {
-      state.automatic = "checking"; save(); render(); return;
-    }
-    const reason = automaticBlock();
-    if (reason) { state.automatic = "blocked"; save(); render(); notify(reason); return; }
-    if (![1, 3].includes(state.page)) return;
-    state.automatic = "running";
-    save(); render();
-  }
-  function scheduleAutomatic() {
-    clearAutomaticTimer();
-    if (state.mode !== "oneclick" || state.automatic !== "running") return;
-    if (automaticBlock() || ![1, 3].includes(state.page)) {
-      state.automatic = "blocked"; save();
-      document.getElementById("production-controls").innerHTML = productionControls();
-      return;
-    }
-    const epoch = autoEpoch, page = state.page, shot = state.shot;
-    // A slideshow of prepared examples, never simulated analysis or capture.
-    autoTimer = setTimeout(() => {
-      if (epoch !== autoEpoch || state.automatic !== "running" || state.page !== page) return;
-      if (page === 1) { state.page = 3; state.shot = 0; }
-      else if (shot < activeShots().length - 1) state.shot++;
-      else { state.page = 4; state.automatic = "done"; }
-      save(); render(); window.scrollTo({ top: 0, behavior: "instant" });
-    }, 4500);
-  }
-  function productionControls() {
-    const status = { idle: "提交后展示新版 Skill 已准备的内容", checking: "正在检查本地概念成片是否可用；不是产品分析或录制。", running: "新版脚本示例自动演示 · 每屏停留约 4.5 秒，可随时暂停", paused: "已暂停 · 编辑或导航已接管，继续需手动操作", done: "新版脚本展示结束 · 已生成概念成片", blocked: automaticBlock() || "自动演示已停止，请检查当前选择后手动继续。" };
-    return `<fieldset class="production-modes"><legend>制作模式</legend>${[["oneclick", "一键成片"], ["step", "分步骤成片"]].map(([id, text]) => `<label><input type="radio" name="production-mode" value="${id}" ${state.mode === id ? "checked" : ""}><strong>${text}</strong></label>`).join("")}</fieldset>
-      <div class="production-status"><p>${state.mode === "oneclick" ? escape(status[state.automatic]) : "每一步编辑后明确确认再继续；确认仅适用于本地草稿，不授权真实录制。"}<small>${state.mode === "oneclick" ? "结果页展示根据新版 Scenario 与分镜生成的概念成片；左侧为生成意图，右侧包含真实排练结果。" : "其他产品等待 Agent 接入。Biz Table 新版场景与分镜可手动审阅，未执行实时分析。"}</small></p>
-      ${["running", "checking"].includes(state.automatic) ? button("暂停 / 接管编辑", "pause-auto", "secondary") : state.mode === "oneclick" && state.sample && [1, 3].includes(state.page) ? button("继续示例自动演示", "resume-auto", "secondary") : ""}</div>`;
   }
   function goalField() {
     return field("视频目标", "videoGoal", state.videoGoal || "", true, 'placeholder="例如：向 LT 汇报 Biz Table 项目，时长约 1 分钟。"');
@@ -437,8 +385,7 @@
       <p class="studio-description">提供链接和视频目标，选择要展示的功能。<br>按业务场景或逐个功能组织视频。</p>
       <form id="source-form" class="source-box"><div class="input-heading"><label for="source">产品链接 / 介绍</label><span>INPUT 01</span></div><textarea id="source" aria-label="产品链接或介绍" data-field="source" maxlength="6000" placeholder="产品网站、GitHub Repo、文档链接或产品介绍">${escape(state.source)}</textarea>
       <div class="file-chips">${state.files.map((f, i) => `<button type="button" data-action="remove-file" data-index="${i}" aria-label="移除 ${escape(f.name)}">${escape(f.name)} ×</button>`).join("")}</div>
-      <div class="goal-input">${goalField()}</div><div class="source-actions"><label class="attach">${svg("paper")} 添加资料<input id="files" type="file" multiple aria-label="添加资料"></label><button type="submit" class="primary">保存并继续 ${svg("arrow")}</button></div></form>
-      <div class="studio-underform">${button("查看 Biz Table 示例 ↗", "load-sample", "example-button")}<span>不上传资料 · 不调用模型</span></div>
+      <div class="goal-input">${goalField()}</div><div class="source-actions"><label class="attach">${svg("paper")} 添加资料<input id="files" type="file" multiple aria-label="添加资料"></label><button type="submit" class="primary" name="production-mode" value="step">分步骤成片 ${svg("arrow")}</button></div></form>
       <p class="home-meta">UI 原型。附件仅保存名称和大小，不读取内容。</p></div>
       <div class="studio-art"><div class="studio-art-top"><span>PRODUCTSHOT</span><span>DESIGN STUDY / 02</span></div><img src="/studio-poster.svg" alt="原创胶片环装饰插画，非产品界面或生成成果" width="720" height="860"><div class="studio-art-bottom"><span>资料 → 场景 → 分镜 → 视频</span><span>↗</span></div></div>
       </section><section class="studio-directory" aria-label="工作台页面"><div><span class="directory-label">WORKSPACE INDEX</span><h2>工作流程</h2></div>${mainPages.slice(1).map((page, i) => `<button data-action="page" data-index="${page}"><span class="directory-number">0${i + 2}</span><strong>${pages[page]}</strong><span class="directory-arrow">↗</span></button>`).join("")}</section>`;
@@ -450,8 +397,6 @@
       <div class="file-chips">${state.files.map((f, i) => `<button type="button" data-action="remove-file" data-index="${i}" aria-label="移除 ${escape(f.name)}">${escape(f.name)} ×</button>`).join("")}</div>
       <div class="goal-input">${goalField()}</div><div class="source-actions intake-start"><button type="submit" class="primary" name="production-mode" value="oneclick">一键成片 ${svg("arrow")}</button><button type="submit" class="secondary" name="production-mode" value="step">分步骤成片 ${svg("arrow")}</button></div></form>
       <p class="home-meta">UI 体验版 · 资料不会上传 · 附件仅保存名称与大小，不读取内容</p>
-      <div class="intake-examples" aria-label="填写示例"><span class="small muted">试试这样填写</span>
-      ${Object.entries(intakeExamples).map(([id, example]) => `<button type="button" data-action="fill-example" data-id="${id}"><strong>${example.label}</strong><span>${example.goal}</span><small>${example.source}</small></button>`).join("")}</div>
       </div><div class="editorial" aria-label="从产品资料到故事和视频的装饰插画，非产品画面" role="img">
       <div class="art-window"><div class="art-bar"><i></i><i></i><i></i><span>产品资料</span></div><div class="art-body"><span class="eyebrow">功能列表</span><div class="art-lines"><i></i><i></i></div><div class="art-blocks"><i>${svg("table")}</i><i>${svg("form")}</i><i>${svg("chart")}</i></div></div></div>
       <div class="art-card script"><span class="eyebrow">分镜脚本</span><span>01 &nbsp; 起始画面</span><span>02 &nbsp; 操作步骤</span><span>03 &nbsp; 结果验证</span></div>
@@ -460,7 +405,7 @@
   }
   function pending() {
     return `${heading("产品分析", "资料已保存到本地。分析功能需要连接 Agent，当前尚未接入。")}
-      <div class="empty-panel"><div class="tile-icon lavender">${svg("link")}</div><h2>资料已保存，分析尚未开始</h2><p>${escape(state.source || "已添加资料附件（仅文件名）")}</p>${button("连接 Agent · 尚未接入", "connect", "secondary")} ${button("加载 Biz Table 示例", "load-sample")}<p class="small" style="margin-top:18px">示例与提交的产品资料无关。</p></div>`;
+      <div class="empty-panel"><div class="tile-icon lavender">${svg("link")}</div><h2>资料已保存，分析尚未开始</h2><p>${escape(state.source || "已添加资料附件（仅文件名）")}</p>${button("连接 Agent · 尚未接入", "connect", "secondary")}</div>`;
   }
   function featurePage() {
     return `${heading("功能选择", "勾选功能，补充未列出的内容，再选择介绍方式。")}
@@ -590,21 +535,19 @@
       <nav class="steps" aria-label="制作流程">${mainPages.map((page, i) => { const active = state.page === page || (state.page === 2 && page === 1); return `${i ? '<span class="step-line"></span>' : ""}<button data-action="page" data-index="${page}" class="step ${active ? "active" : state.page > page ? "past" : ""}" ${active ? 'aria-current="step"' : ""}><span class="number">${i + 1}</span>${pages[page]}</button>`; }).join("")}</nav>
       ${loadError ? `<div class="error-banner" role="alert">${escape(loadError)} ${button("下载原草稿", "export-raw", "secondary")} ${button("重置损坏草稿", "reset-storage", "secondary")}</div>` : ""}
       ${saveError ? `<div class="error-banner" role="alert">${escape(saveError)} ${button("下载草稿", "export", "secondary")}</div>` : ""}
-      <main>${state.page || studio ? `<section id="production-controls" aria-label="制作模式与进度">${productionControls()}</section>` : ""}${content}${state.page ? `<div class="page-foot">${navigation()}</div>` : ""}</main><footer class="global-foot"><span>ProductShot · UI 原型</span><span>Agent 未连接 · 草稿保存在本地</span></footer>`;
+      <main>${content}${state.page ? `<div class="page-foot">${navigation()}</div>` : ""}</main><footer class="global-foot"><span>ProductShot · UI 原型</span><span>Agent 未连接 · 草稿保存在本地</span></footer>`;
     if (spatialStage) (state.page === 0 ? document.querySelector(".home") : document.body).append(spatialStage);
     document.querySelectorAll("img").forEach(img => img.addEventListener("error", () => {
       const replacement = document.createElement("div"); replacement.className = "media-empty"; replacement.textContent = "参考图片不可用"; img.replaceWith(replacement);
-      if (state.automatic === "running") { pauseAutomatic(); state.automatic = "blocked"; mediaAvailable = false; save(); document.getElementById("production-controls").innerHTML = productionControls(); }
+      mediaAvailable = false;
     }));
     const video = document.getElementById("preview-video");
     if (video) video.addEventListener("error", () => {
-      pauseAutomatic(); mediaAvailable = false; state.automatic = "blocked"; save();
+      pauseAutomatic(); mediaAvailable = false; save();
       video.replaceWith(Object.assign(document.createElement("p"), { className: "media-empty", textContent: "参考视频加载失败；没有生成替代画面。" }));
-      document.getElementById("production-controls").innerHTML = productionControls();
       document.querySelector(".video-meta").textContent = "示例素材不可用 · 检查本地服务后刷新";
       notify("参考视频加载失败。请检查本地素材服务；没有生成替代画面。");
     });
-    scheduleAutomatic();
   }
   function go(page) {
     pauseAutomatic();
@@ -659,7 +602,6 @@
   document.addEventListener("change", event => {
     const el = event.target;
     pauseAutomatic();
-    if (el.name === "production-mode") { state.mode = el.value; state.automatic = "paused"; save(); render(); return; }
     if (el.name === "presentation") { state.presentation = el.value; state.shot = 0; state.stale = true; save(); render(); return; }
     if (el.dataset.extraCheck) { state.extraFeatures.find(f => f.id === el.dataset.extraCheck).selected = el.checked; state.stale = true; save(); render(); return; }
     if (el.id === "persona-focus") { state.sceneData.focus = el.value; save(); render(); return; }
@@ -680,7 +622,7 @@
       if (!state.source.trim() && !state.files.length) { notify("先放一个链接、一段介绍，或添加一份资料。"); document.getElementById("source").focus(); return; }
       if (!state.videoGoal.trim()) { notify("请简单说明视频用途，可附大致时长。"); document.querySelector('[data-field="videoGoal"]').focus(); return; }
       if (event.submitter?.name === "production-mode") state.mode = event.submitter.value;
-      state.sample = !state.files.length && state.source.trim().replace(/\/$/, "") === intakeExamples.repo.source.replace(/\/$/, "");
+      state.sample = !state.files.length && state.source.trim().replace(/\/$/, "") === DEFAULT_SOURCE.replace(/\/$/, "");
       if (state.sample && state.mode === "oneclick") {
         state.selected = recommendedFeatures();
         state.presentation = "features";
@@ -688,11 +630,14 @@
         state.shot = 0;
         state.stale = true;
       }
-      if (!state.sample && state.mode === "oneclick") state.automatic = "blocked";
-      go(1);
-      if (state.sample) {
-        if (state.mode === "oneclick") startAutomatic();
-        notify("已进入 Biz Table 已有示例，未执行实时分析。");
+      if (state.sample && state.mode === "oneclick") {
+        state.automatic = "done";
+        go(4);
+        notify("一键成片已直接进入效果与修改；中间步骤不展示。");
+      } else {
+        state.automatic = "idle";
+        go(1);
+        if (state.sample) notify("已进入分步骤模式；按功能选择、分镜脚本和效果与修改继续。");
       }
     } else if (event.target.id === "custom-scenario-form") {
       event.preventDefault();
@@ -720,23 +665,13 @@
     const el = event.target.closest("[data-action]");
     if (!el || el.disabled) return;
     const a = el.dataset.action, i = Number(el.dataset.index);
-    if (!["resume-auto", "pause-auto", "export", "export-raw"].includes(a)) pauseAutomatic();
-    if (a === "pause-auto") { pauseAutomatic(); render(); return; }
-    if (a === "resume-auto") { startAutomatic(); return; }
-    if (a === "fill-example") {
-      const example = intakeExamples[el.dataset.id];
-      if (!example) { notify("未找到填写示例。"); return; }
-      if ((state.source.trim() || state.videoGoal.trim()) && !window.confirm("用这个例子替换当前链接和视频目标？其他草稿保留。")) return;
-      state.source = example.source; state.videoGoal = example.goal; state.sample = false; state.stale = true; state.automatic = "idle";
-      save(); render(); notify(el.dataset.id === "repo" ? "已填入 Biz Table，保存并继续即可体验已有示例。" : "已填入示例，尚未提交分析。");
-    }
-    else if (a === "connect") document.getElementById("connection").showModal();
+    if (!["export", "export-raw"].includes(a)) pauseAutomatic();
+    if (a === "connect") document.getElementById("connection").showModal();
     else if (a === "close-dialog") document.getElementById("connection").close();
     else if (a === "page") go(i);
     else if (a === "home") go(0);
     else if (a === "back") go(state.page === 3 && state.presentation === "features" ? 1 : Math.max(0, state.page - 1));
     else if (a === "next") next();
-    else if (a === "load-sample") { state.sample = true; if (!state.videoGoal.trim()) state.videoGoal = "向 LT 汇报 Biz Table 项目，时长约 1 分钟。"; go(1); if (state.mode === "oneclick") startAutomatic(); }
     else if (a === "add-extra") {
       const id = "extra-" + crypto.randomUUID();
       state.extraFeatures.push({ id, title: "", selected: true }); state.stale = true; save(); render();
@@ -782,8 +717,6 @@
   fetch("/demo-assets/status", { cache: "no-store" }).then(async response => {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json(); mediaAvailable = data.available === true; mediaChecked = true;
-    if (state.automatic === "checking" && state.mode === "oneclick") { startAutomatic(); return; }
     if (state.page >= 3 && !document.activeElement?.matches("input,textarea,select")) render();
-    const panel = document.getElementById("production-controls"); if (panel) panel.innerHTML = productionControls();
-  }).catch(() => { mediaAvailable = false; mediaChecked = true; if (["checking", "running"].includes(state.automatic)) { clearAutomaticTimer(); state.automatic = "blocked"; save(); } if (state.page >= 3) notify("参考素材服务未连接，已保留空素材状态。"); const panel = document.getElementById("production-controls"); if (panel) panel.innerHTML = productionControls(); });
+  }).catch(() => { mediaAvailable = false; mediaChecked = true; if (state.page >= 3) notify("参考素材服务未连接，已保留空素材状态。"); });
 })();

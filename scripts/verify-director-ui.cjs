@@ -15,7 +15,8 @@ const freePort = () => new Promise(resolve => {
   });
 });
 async function verifyHeadingActions(page, nextLabel, disabled = false) {
-  if (nextLabel && !disabled && await page.$eval('[name="production-mode"][value="step"]', el => el.checked)) nextLabel = nextLabel.replace("下一步：", "确认并继续：");
+  const mode = await page.evaluate(key => JSON.parse(localStorage.getItem(key) || "{}").mode, storageKey);
+  if (nextLabel && !disabled && mode === "step") nextLabel = nextLabel.replace("下一步：", "确认并继续：");
   assert.equal(await page.$$eval('[data-action="back"]', els => els.length), 1);
   assert.equal(await page.$$eval('[data-action="next"]', els => els.length), nextLabel ? 1 : 0);
   assert.equal(await page.$$eval('[data-action="export"]', els => els.length), nextLabel ? 0 : 1);
@@ -120,15 +121,15 @@ async function verifyDefaultFlow(browser, url) {
             });
         }), "Intake order must be source/attachment, goal, then two start buttons");
       }
-      if (variant === "studio") await page.click('[data-action="load-sample"]');
-      else {
+      if (variant !== "studio") {
         assert.equal(await page.$('.home [data-action="load-sample"]'), null);
-        await page.click('[data-action="fill-example"][data-id="repo"]');
-        assert.ok(await page.$("#source-form"), "Selecting an example must stay on intake");
+        assert.equal(await page.$$eval('[data-action="fill-example"]', els => els.length), 0);
+        assert.equal(await page.$eval("#source", el => el.value), "https://github.com/gim-home/biz-table/");
+        assert.match(await page.$eval('[data-field="videoGoal"]', el => el.value), /向 LT 汇报.*1 分钟/);
         await page.reload({ waitUntil: "networkidle0" });
         await page.click('#source-form [type="submit"][value="step"]');
         assert.match(await page.$eval(".top-right", el => el.textContent), /示例预览/);
-      }
+      } else await page.click('#source-form [type="submit"][value="step"]');
       assert.deepEqual(await page.$$eval("[data-feature]:checked", els => els.map(el => el.dataset.feature)), ["build", "import", "dashboard", "workflow", "form"]);
       await page.click('[data-feature="teams"]');
       await verifyHeadingActions(page, "下一步：分镜脚本");
@@ -171,156 +172,33 @@ async function verifyDefaultFlow(browser, url) {
   }
 }
 async function verifyAutomaticFlow(browser, url) {
-      const context = await browser.createBrowserContext();
-      try {
-        const page = await context.newPage();
-        const readState = () => page.evaluate(key => JSON.parse(localStorage.getItem(key)), storageKey);
-        const fillSample = async () => {
-          await page.goto(url, { waitUntil: "networkidle0" });
-          await page.click('[data-action="fill-example"][data-id="repo"]');
-          await page.click('#source-form [type="submit"][value="oneclick"]');
-        };
-        await fillSample();
-        assert.deepEqual((await readState()).selected, ["build", "import", "dashboard", "workflow", "form"]);
-        assert.equal((await readState()).presentation, "features");
-        if (!media) {
-          assert.equal((await readState()).automatic, "blocked");
-          assert.match(await page.$eval("#production-controls", el => el.textContent), /素材不可用/);
-          return;
-        }
-        assert.equal((await readState()).automatic, "running");
-        assert.match(await page.$eval("#production-controls", el => el.textContent), /示例自动演示/);
-        await page.waitForSelector(".script-layout", { timeout: 8000 });
-        await verifyRecordingSelection(page, 5);
-        assert.doesNotMatch(await page.$eval('[data-field="shot.narration"]', el => el.value), /服务器|条记录|总数|POST|点击/);
-        await page.waitForFunction(() => document.querySelector(".shot-workspace")?.dataset.scriptId === "workflow", { timeout: 20000 });
-        await verifyRecordingSelection(page, 5, 3);
-        await page.waitForSelector("#preview-video", { timeout: 12000 });
-        assert.equal(await page.$(".sample-narration"), null, "The new concept video uses the current per-scene narration instead of exposing the old reference transcript");
-        await page.waitForFunction(() => document.querySelector("video")?.readyState >= 1);
-        assert.equal((await readState()).automatic, "done");
-        await page.reload({ waitUntil: "networkidle0" });
-        assert.equal((await readState()).automatic, "done", "Completed demo must not replay on reload");
-        await page.click('[data-action="page"][data-index="1"]');
-        await page.click('[data-action="resume-auto"]');
-        await page.reload({ waitUntil: "networkidle0" });
-        assert.match(await page.$eval("#production-controls", el => el.textContent), /已暂停/);
-        await page.click('[data-action="resume-auto"]');
-        await page.click('[data-action="pause-auto"]');
-        await delay(4700);
-        assert.equal((await readState()).page, 1);
-        assert.equal((await readState()).automatic, "paused");
-        await page.click('[data-action="resume-auto"]');
-        await page.click('[data-feature="teams"]');
-        assert.equal((await readState()).automatic, "paused", "Editing takes over");
-        await page.click('[data-action="resume-auto"]');
-        assert.equal((await readState()).automatic, "blocked", "Unrecorded capability never auto succeeds");
-        await page.click('[data-feature="teams"]');
-        await page.click('[data-action="resume-auto"]');
-        await page.click('[name="production-mode"][value="step"]');
-        await delay(4700);
-        assert.equal((await readState()).page, 1, "Mode switch cancels pending continuation");
-        await verifyHeadingActions(page, "下一步：分镜脚本");
-        await page.click('[data-action="next"]');
-        await page.click('[data-action="shot"][data-index="0"]');
-        await page.click('.narrative-framing summary');
-        await page.$eval('[data-field="narrative.opening"]', el => { el.value = "自定义产品故事"; el.dispatchEvent(new Event("input", { bubbles: true })); });
-        await page.$eval('[data-field="narrative.closing"]', el => { el.value = "保留旧版收束"; el.dispatchEvent(new Event("input", { bubbles: true })); });
-        await page.$eval('[data-field="shot.narration"]', el => { el.value = "团队更容易协作。"; el.dispatchEvent(new Event("input", { bubbles: true })); });
-        const action = (await readState()).featureShotDrafts[0].action;
-        await page.click('[data-action="shot"][data-index="0"]');
-        assert.equal(await page.$eval('[data-field="shot.narration"]', el => el.value), "团队更容易协作。");
-        assert.equal(await page.$eval('[data-field="shot.action"]', el => el.value), action);
-        await page.evaluate(key => { const draft = JSON.parse(localStorage.getItem(key)); draft.scriptView = "narration"; localStorage.setItem(key, JSON.stringify(draft)); }, storageKey);
-        await page.reload({ waitUntil: "networkidle0" });
-        await verifyRecordingSelection(page, 5);
-        assert.equal(await page.$eval('[data-field="narrative.opening"]', el => el.value), "自定义产品故事");
-        assert.equal(await page.$eval('[data-field="narrative.closing"]', el => el.value), "保留旧版收束");
-        await page.click('[data-action="page"][data-index="1"]');
-        await page.click('[name="presentation"][value="scenario"]');
-        await page.click('[data-action="next"]');
-        await page.click('[data-action="next"]');
-        assert.notEqual(await page.$eval('[data-field="narrative.opening"]', el => el.value), "自定义产品故事");
-        await page.$eval('[data-field="shot.narration"]', el => { el.value = "项目场景的独立讲解"; el.dispatchEvent(new Event("input", { bubbles: true })); });
-        await page.click('[data-action="back"]');
-        await page.click('[data-action="scenario"][data-id="recruiting"]');
-        await page.click('[data-action="next"]');
-        assert.notEqual(await page.$eval('[data-field="shot.narration"]', el => el.value), "项目场景的独立讲解");
-        await page.click('[data-action="back"]');
-        await page.click('[data-action="scenario"][data-id="retail"]');
-        await page.click('[data-action="next"]');
-        assert.equal(await page.$eval('[data-field="shot.narration"]', el => el.value), "项目场景的独立讲解");
-        await page.click('[data-action="page"][data-index="1"]');
-        await page.click('[name="presentation"][value="features"]');
-        await page.click('[name="production-mode"][value="oneclick"]');
-        await page.click('[data-action="resume-auto"]');
-        await page.click('[data-action="home"]');
-        await delay(4700);
-        assert.equal((await readState()).page, 0, "Navigation must cancel the old route timer");
-        await (await page.$("#files")).uploadFile("README.md");
-        assert.equal((await readState()).sample, false, "Attachments invalidate the prepared example");
-        await page.click('.steps [data-action="page"][data-index="3"]');
-        assert.match(await page.$eval("main", el => el.textContent), /分析尚未开始/);
-        await page.click('[data-action="home"]');
-        await page.$eval("#source", el => { el.value = "https://other-product.example"; el.dispatchEvent(new Event("input", { bubbles: true })); });
-        await page.click('.steps [data-action="page"][data-index="4"]');
-        assert.match(await page.$eval("main", el => el.textContent), /分析尚未开始/);
-        assert.equal(await page.$("#preview-video"), null, "Source edit invalidates sample even without submission");
-        // Existing saved choices migrate to manual mode without resetting their scripts or selections.
-        await page.evaluate(key => { const draft = JSON.parse(localStorage.getItem(key)); delete draft.mode; delete draft.automatic; localStorage.setItem(key, JSON.stringify(draft)); }, storageKey);
-        await page.reload({ waitUntil: "networkidle0" });
-        assert.equal(await page.$eval('[name="production-mode"][value="step"]', el => el.checked), true);
-        await page.evaluate(key => {
-          const draft = JSON.parse(localStorage.getItem(key));
-          draft.page = 0; draft.files = []; draft.selected = ["build", "import"];
-          draft.presentation = "scenario";
-          draft.extraFeatures = [{id: "kept-extra", title: "保留补充功能", selected: true}];
-          draft.source = "https://github.com/gim-home/biz-table/";
-          localStorage.setItem(key, JSON.stringify(draft));
-        }, storageKey);
-        await page.reload({ waitUntil: "networkidle0" });
-        const previousDrafts = (await readState()).featureShotDrafts;
-        assert.deepEqual((await readState()).selected, ["build", "import"], "Returning home preserves previous selections");
-        await page.click('#source-form [type="submit"][value="oneclick"]');
-        await page.click('[data-action="pause-auto"]');
-        assert.deepEqual((await readState()).selected, ["build", "import", "dashboard", "workflow", "form"], "Explicit one-click intake uses the latest skill recommendations even with old drafts");
-        assert.equal((await readState()).presentation, "features");
-        assert.equal((await readState()).extraFeatures[0].title, "保留补充功能");
-        assert.equal((await readState()).extraFeatures[0].selected, false);
-        assert.deepEqual((await readState()).featureShotDrafts, previousDrafts, "Recommended selections never erase edited scripts");
-        // Failed media status and failed video both stop, without manufactured success.
-        await page.evaluate(key => localStorage.removeItem(key), storageKey);
-        await page.setCacheEnabled(false);
-        await page.setRequestInterception(true);
-        const rejectStatus = request => request.url().endsWith("/demo-assets/status") ? request.respond({ status: 503, body: "Unavailable" }) : request.continue();
-        page.on("request", rejectStatus);
-        await fillSample();
-        assert.equal((await readState()).automatic, "blocked");
-        assert.equal(await page.$("video"), null);
-        page.off("request", rejectStatus);
-        const rejectVideo = request => request.url().endsWith("/demo-assets/video.mp4") ? request.respond({ status: 404, body: "Missing" }) : request.continue();
-        page.on("request", rejectVideo);
-        await page.reload({ waitUntil: "networkidle0" });
-        await page.click('.steps [data-action="page"][data-index="4"]');
-        await page.waitForFunction(() => document.querySelector(".video-wrap")?.textContent.includes("加载失败"));
-        assert.equal((await readState()).automatic, "blocked");
-        assert.equal(await page.$(".video-meta a"), null);
-        page.off("request", rejectVideo);
-        let releaseStatus;
-        const heldStatus = new Promise(resolve => { releaseStatus = resolve; });
-        page.on("request", request => request.url().endsWith("/demo-assets/status") ? releaseStatus(request) : request.continue());
-        await page.evaluate(key => localStorage.removeItem(key), storageKey);
-        await page.goto(url, { waitUntil: "domcontentloaded" });
-        await page.click('[data-action="fill-example"][data-id="repo"]');
-        await page.click('#source-form [type="submit"]');
-        assert.equal((await readState()).automatic, "checking", "Wait only for actual media status, not simulated product analysis");
-        await page.click('[data-action="pause-auto"]');
-        await (await heldStatus).respond({ status: 200, contentType: "application/json", body: JSON.stringify({ available: true }) });
-        await page.waitForNetworkIdle();
-        assert.equal((await readState()).automatic, "paused", "Late status response cannot undo a pause");
-        await page.click('[data-action="resume-auto"]');
-        assert.equal((await readState()).automatic, "running");
-      } finally { await context.close(); }
+  const context = await browser.createBrowserContext();
+  try {
+    const page = await context.newPage();
+    const readState = () => page.evaluate(key => JSON.parse(localStorage.getItem(key)), storageKey);
+    await page.goto(url, { waitUntil: "networkidle0" });
+    assert.equal(await page.$("#production-controls"), null);
+    await page.click('#source-form [type="submit"][value="oneclick"]');
+    assert.equal((await readState()).mode, "oneclick");
+    assert.equal((await readState()).page, 4, "One-click goes directly from intake to results");
+    assert.equal(await page.$eval("main h1", el => el.textContent), "效果与修改");
+    assert.equal(await page.$("#production-controls"), null, "No repeated mode selector after intake");
+    if (media) await page.waitForFunction(() => document.querySelector("video")?.readyState >= 1);
+    else assert.match(await page.$eval(".video-wrap", el => el.textContent), /未提供本地实录/);
+
+    await page.click('[data-action="home"]');
+    await page.click('#source-form [type="submit"][value="step"]');
+    assert.equal((await readState()).mode, "step");
+    assert.equal((await readState()).page, 1, "Step mode exposes feature selection");
+    assert.equal(await page.$eval("main h1", el => el.textContent), "功能选择");
+    assert.equal(await page.$("#production-controls"), null);
+    await page.click('[data-action="next"]');
+    assert.equal((await readState()).page, 3, "Direct-feature step mode proceeds to storyboard");
+    assert.equal(await page.$eval("main h1", el => el.textContent), "分镜脚本");
+    await page.click('[data-action="next"]');
+    assert.equal((await readState()).page, 4);
+    assert.equal(await page.$eval("main h1", el => el.textContent), "效果与修改");
+  } finally { await context.close(); }
 }
 (async () => {
   try {
@@ -433,33 +311,20 @@ async function verifyAutomaticFlow(browser, url) {
       assert.doesNotMatch(await page.title(), /[CE] 版/);
       assert.doesNotMatch(await page.$eval(".home", el => el.innerText), /[CE] \//);
       assert.doesNotMatch(await page.$eval(".home>div", el => getComputedStyle(el, "::before").content), /E \//);
-      assert.equal(await page.$$eval('[data-action="fill-example"]', els => els.length), 2);
-      await page.click('[data-action="fill-example"][data-id="repo"]');
+      assert.equal(await page.$$eval('[data-action="fill-example"]', els => els.length), 0);
       assert.equal(await page.$eval("#source", el => el.value), "https://github.com/gim-home/biz-table/");
       assert.match(await page.$eval('[data-field="videoGoal"]', el => el.value), /LT.*1 分钟/);
-      page.once("dialog", dialog => dialog.dismiss());
-      await page.click('[data-action="fill-example"][data-id="website"]');
-      assert.equal(await page.$eval("#source", el => el.value), "https://github.com/gim-home/biz-table/");
-      page.once("dialog", dialog => dialog.accept());
-      await page.click('[data-action="fill-example"][data-id="website"]');
-      assert.equal(await page.$eval("#source", el => el.value), "https://excalidraw.com/");
-      assert.match(await page.$eval('[data-field="videoGoal"]', el => el.value), /黑客松评委.*2 分钟以内/);
       await page.type('[data-field="videoGoal"]', " 只介绍协作。");
       await page.reload({ waitUntil: "networkidle0" });
       assert.match(await page.$eval('[data-field="videoGoal"]', el => el.value), /只介绍协作/);
       const exampleState = await page.evaluate(key => JSON.parse(localStorage.getItem(key)), storageKey);
       assert.equal(exampleState.page, 0);
       assert.equal(exampleState.sample, false, "Filling inputs must not fabricate analysis");
-      await page.click('#source-form [type="submit"]');
-      assert.match(await page.$eval("main", el => el.textContent), /分析尚未开始/);
-      await page.click('[data-action="back"]');
-      page.once("dialog", dialog => dialog.accept());
-      await page.click('[data-action="fill-example"][data-id="repo"]');
       await page.$eval("#source", el => {
         el.value = "https://example.com/changed-product";
         el.dispatchEvent(new Event("input", { bubbles: true }));
       });
-      await page.click('#source-form [type="submit"]');
+      await page.click('#source-form [type="submit"][value="step"]');
       assert.match(await page.$eval("main", el => el.textContent), /分析尚未开始/);
       assert.equal(await page.evaluate(key => JSON.parse(localStorage.getItem(key)).sample, storageKey), false, "Changing the example URL must not load unrelated Biz Table data");
       await page.evaluate(key => localStorage.removeItem(key), storageKey);
@@ -469,10 +334,12 @@ async function verifyAutomaticFlow(browser, url) {
     assert.equal(await page.$eval("#connection", d => d.open), true);
     await page.click('#connection .primary');
     assert.equal(await page.$eval("#connection", d => d.open), false);
-    await page.click('#source-form [type="submit"]');
+    await page.$eval("#source", el => { el.value = ""; el.dispatchEvent(new Event("input", { bubbles: true })); });
+    await page.$eval('[data-field="videoGoal"]', el => { el.value = ""; el.dispatchEvent(new Event("input", { bubbles: true })); });
+    await page.click('#source-form [type="submit"][value="step"]');
     assert.match(await page.$eval("#notice", n => n.textContent), /先放一个链接/);
     await page.type("#source", "https://example.com/my-product");
-    await page.click('#source-form [type="submit"]');
+    await page.click('#source-form [type="submit"][value="step"]');
     assert.match(await page.$eval("#notice", n => n.textContent), /简单说明视频用途/);
     await page.type('[data-field="videoGoal"]', "向合作伙伴介绍产品的新功能");
     await page.click(variant === "studio" ? '#source-form [type="submit"]' : '#source-form [type="submit"][value="step"]');
@@ -485,7 +352,10 @@ async function verifyAutomaticFlow(browser, url) {
     await page.setViewport({ width: 1440, height: 1000 });
     await page.click('.page-foot [data-action="next"]');
     assert.equal(await page.$eval("main h1", el => el.textContent), "产品分析");
-    await page.click('[data-action="load-sample"]');
+    await page.click('[data-action="back"]');
+    await page.$eval("#source", el => { el.value = "https://github.com/gim-home/biz-table/"; el.dispatchEvent(new Event("input", { bubbles: true })); });
+    await page.$eval('[data-field="videoGoal"]', el => { el.value = "向 LT 汇报 Biz Table 项目，时长约 1 分钟。"; el.dispatchEvent(new Event("input", { bubbles: true })); });
+    await page.click('#source-form [type="submit"][value="step"]');
     await page.click('[data-feature="teams"]');
     assert.equal(await page.$eval('input[name="presentation"][value="features"]', el => el.checked), true);
     assert.equal(await page.$$eval(".scenario-teaser .pill", els => els.length), 3);
@@ -535,7 +405,7 @@ async function verifyAutomaticFlow(browser, url) {
     assert.equal(await page.$eval('.page-foot [data-action="next"]', el => el.textContent.trim()), "确认并继续：选择场景");
     await page.click('[data-action="next"]');
     assert.ok(await page.$(".scenario-grid"));
-    assert.match(await page.$eval(".page-head", el => el.textContent), /向合作伙伴介绍产品的新功能/);
+    assert.match(await page.$eval(".page-head", el => el.textContent), /向 LT 汇报 Biz Table/);
     assert.equal(await page.$$eval(".compact-scenario", els => els.length), 3);
     assert.equal(await page.$eval(".compact-analysis", el => el.open), false);
     assert.equal(await page.$eval(".custom-scenario-editor", el => el.open), false);
@@ -747,8 +617,8 @@ async function verifyAutomaticFlow(browser, url) {
     }
     const saved = await page.evaluate(key => JSON.parse(localStorage.getItem(key)), storageKey);
     assert.deepEqual(await page.evaluate(keys => keys.map(key => localStorage.getItem(key)), untouchedKeys), untouchedKeys.map(() => "other-variant-draft"));
-    assert.equal(saved.source, "https://example.com/my-product");
-    assert.equal(saved.videoGoal, "向合作伙伴介绍产品的新功能");
+    assert.equal(saved.source, "https://github.com/gim-home/biz-table/");
+    assert.match(saved.videoGoal, /向 LT 汇报 Biz Table/);
     assert.equal(saved.shots[3].narration, "保留真实提交。");
     for (const key of scriptKeys) {
       assert.equal(saved.shots[3][key], scenarioEdits[key]);
