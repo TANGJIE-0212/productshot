@@ -20,17 +20,20 @@ For product-demo requests, load
 and browser assets live under `.github/skills/product-demo-director/`.
 The thin Codex entry point must not duplicate the workflow.
 
-The browser overview introduces the Skill. Four result tabs show features and
-audience, scenario and outline, story and shots, and preview/review. Discussion
-starts in native chat with a single-choice "whole product / specific features".
-Whole product skips feature selection. Specific features opens browser
-checkboxes plus custom input. The Agent next supplies product-informed audience
-options and free text in that same browser. Users may edit any displayed field,
-submit, and say "submitted" in native chat; the Agent then reads and continues.
-Do not promise automatic wake-up, add a discovery approval question, or replace
-browser multiselect with a long native single-choice list. Browser edits and Agent writes
-use the same revision-checked private project. Do not invent evidence or treat
-storyboard approval as permission to record, spend money or publish.
+Design work uses exactly two specialist skills:
+`product-scenario-design` for goal/user/pain-driven use cases and coarse outlines,
+and `recording-script-design` for executable recording plans with exact inputs,
+capture beats, editing, camera/highlights, narration, copy and verification.
+Their canonical files are in `.github/skills/`; `.agents/skills/` contains thin
+discovery entries. A skill file is not an automatic UI-to-Agent integration.
+
+The current flow is product/goal, features, recording script, results. Default
+to direct-feature presentation; scene proposals are optional under feature selection.
+Do not ask whole/specific scope or duplicate audience questions. Legacy browser
+forms and the runner retain their existing document formats and approval gates.
+Use native elicitation when available, otherwise explicit chat/browser decisions.
+Do not promise automatic wake-up, fabricate approvals or treat storyboard approval
+as recording, mutation, spending or publishing permission.
 
 ## Development
 

@@ -1,6 +1,6 @@
 ---
 name: product-demo-director
-description: Use when the user wants a product demo from a URL or repo. Run the director workflow in native Codex chat and open its editable result page in the in-app browser.
+description: Orchestrate product-demo planning from a product source and video goal, using the scenario-design and recording-script specialists plus the existing versioned project.
 ---
 
 # Product Demo Director for Codex
@@ -10,6 +10,8 @@ This is the Codex discovery entry point, not a separate implementation.
 Read and follow the canonical workflow at
 [Product Demo Director](../../../.github/skills/product-demo-director/SKILL.md),
 then its [runtime reference](../../../.github/skills/product-demo-director/references/runtime.md).
+The canonical workflow routes to `product-scenario-design` only when a use-case
+story is wanted, and to `recording-script-design` for actionable capture plans.
 Resolve those links relative to this file. All runtime commands and assets live
 in `.github/skills/product-demo-director/` at the repository root.
 

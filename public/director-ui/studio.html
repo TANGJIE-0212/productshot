@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN" data-variant="studio">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>ProductShot · Studio</title>
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/studio.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div id="app"></div>
+  <div id="notice" role="status" aria-live="polite"></div>
+  <dialog id="connection">
+    <button class="icon-button close-dialog" data-action="close-dialog" aria-label="关闭">×</button>
+    <h2>连接 Agent</h2>
+    <p>当前为 UI 原型，暂不支持登录、连接或发送消息。</p>
+    <div class="connection-option"><strong>VS Code / Copilot</strong><span class="pill lavender">计划接入</span></div>
+    <div class="connection-option"><strong>其他 MCP 客户端</strong><span class="pill">计划接入</span></div>
+    <p class="muted small">示例模式不会调用模型、上传资料或产生费用。</p>
+    <button class="primary" data-action="close-dialog">返回</button>
+  </dialog>
+</body>
+</html>

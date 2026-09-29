@@ -56,21 +56,26 @@ the Agent. Do not reload the page to force synchronization.
 
 ### Native conversation loop
 
-1. Introduce the Skill in chat; obtain only a missing URL/repo.
+The canonical Skill and the 2026-09-25 interaction update take precedence over
+older intake sequences. This reference describes the legacy storage adapter.
+
+1. Introduce the Skill in chat; obtain only missing product source and rough video goal.
 2. Initialize or resume the same private project; open its viewer.
 3. Inspect real product evidence and publish discovery.
-4. Ask "whole product or specific features?" as a native single-choice question.
-   Publish the scope. Whole product skips feature selection; specific features
-   expands browser checkboxes and custom input. Have the user submit and tell
-   you in native chat. Read the saved answer before continuing.
-5. Publish product-informed `audienceOptions` in the same selection document.
-   The browser offers those options and editable free text. Have the user
-   submit and tell you again, then read the latest document.
-6. Confirm the published document in native chat (or read its browser approval).
+4. Offer actual features, recommendations and custom additions. Use native MCP
+   elicitation if available; accepted tool responses return directly to the Agent.
+   Legacy browser-only submission needs a subsequent native turn to continue.
+5. Derive the audience from the supplied goal when clear; do not ask again.
+   Offer scenario presentation as optional, defaulting to feature-by-feature.
+6. Confirm the selection in native chat (or read its actual browser approval).
    Record explicit native approval with `approve`.
-7. Propose several scenarios and ordered outlines in chat. Publish the chosen
-   outline; discuss and approve it before drafting detailed shots.
-8. Repeat the same publish/discuss/edit/approve loop for storyboard and review.
+7. Use `product-scenario-design` only for scenario mode. For direct features,
+   adapt the ordered features to a thin outline without a scenario question.
+   Preserve rich design sidecars. The runner still gates storyboard on outline
+   approval; never fabricate it to move forward.
+8. Use `recording-script-design` for the detailed recording plan, then publish
+   the compatible storyboard. Real production and review require actual artifacts
+   and separate authorization; the CLI does not record or render.
 
 Before **every native response**, read the current project. Saved browser edits
 are already the current document: do not ask the user to resend them or post
